@@ -9,12 +9,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
 type InviteRequest struct {
-	ct               int64 // mandatory
+	ct               string // mandatory
 	customerNumber   string
 	email            string
 	mobile           string
@@ -126,11 +125,11 @@ func (c *TwikeyClient) DocumentInvite(request InviteRequest) (*Invite, error) {
 		return nil, err
 	}
 
-	params := url.Values{}
-	if request.ct == 0 {
+	if request.ct == "" {
 		return nil, errors.New("A template is required")
 	}
-	params.Add("ct", strconv.FormatInt(request.ct, 10))
+	params := url.Values{}
+	params.Add("ct", request.ct)
 	params.Add("customerNumber", request.customerNumber)
 	params.Add("email", request.email)
 	params.Add("mobile", request.mobile)
@@ -151,14 +150,9 @@ func (c *TwikeyClient) DocumentInvite(request InviteRequest) (*Invite, error) {
 	params.Add("bic", request.bic)
 	params.Add("campaign", request.campaign)
 
-	c.debug("New document", params)
+	c.debug("New document", params.Encode())
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/prepare", strings.NewReader(params.Encode()))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Authorization", c.apiToken)
-	req.Header.Set("User-Agent", c.UserAgent)
-	req.Header.Add("Accept", "application/json")
-
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invite", strings.NewReader(params.Encode()))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err

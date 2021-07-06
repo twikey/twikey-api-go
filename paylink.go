@@ -17,7 +17,7 @@ type PaylinkRequest struct {
 	Firstname      string  //	firstname
 	Language       string  //	Language (en/fr/nl/de/pt/es/it)
 	Mobile         string  //	mobile number
-	Ct             int64   //	contract template
+	Template       string  //	contract template
 	Title          string  //	Message to the debto
 	Remittance     string  //	Payment message, if empty then title will be used
 	Amount         float64 //	Amount to be billed
@@ -40,37 +40,41 @@ type Paylink struct {
 	Msg    string  `json:"msg,omitempty"`
 	Ref    string  `json:"ref,omitempty"`
 	State  string  `json:"state,omitempty"`
+	Url  string  `json:"url,omitempty"`
 }
 
 func (c *TwikeyClient) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
 
 	params := url.Values{}
-	params.Add("ct", fmt.Sprintf("%d", paylinkRequest.Ct))
-	params.Add("title", paylinkRequest.Title)
-	params.Add("remittance", paylinkRequest.Remittance)
-	params.Add("amount", fmt.Sprintf("%.2f", paylinkRequest.Amount))
-	params.Add("redirectUrl", paylinkRequest.RedirectUrl)
-	params.Add("place", paylinkRequest.Place)
-	params.Add("expiry", paylinkRequest.Expiry)
-	params.Add("sendInvite", paylinkRequest.SendInvite)
-	params.Add("txref", paylinkRequest.Txref)
-	params.Add("method", paylinkRequest.Method)
-	params.Add("invoice", paylinkRequest.Invoice)
+	addIfExists(params,"ct", paylinkRequest.Template)
+	addIfExists(params,"ct", paylinkRequest.Template)
+	addIfExists(params,"title", paylinkRequest.Title)
+	addIfExists(params,"remittance", paylinkRequest.Remittance)
+	addIfExists(params,"amount", fmt.Sprintf("%.2f", paylinkRequest.Amount))
+	addIfExists(params,"redirectUrl", paylinkRequest.RedirectUrl)
+	addIfExists(params,"place", paylinkRequest.Place)
+	addIfExists(params,"expiry", paylinkRequest.Expiry)
+	addIfExists(params,"sendInvite", paylinkRequest.SendInvite)
+	addIfExists(params,"txref", paylinkRequest.Txref)
+	addIfExists(params,"method", paylinkRequest.Method)
+	addIfExists(params,"invoice", paylinkRequest.Invoice)
 
-	params.Add("customerNumber", paylinkRequest.CustomerNumber)
-	params.Add("email", paylinkRequest.Email)
-	params.Add("lastname", paylinkRequest.Lastname)
-	params.Add("firstname", paylinkRequest.Firstname)
-	params.Add("l", paylinkRequest.Language)
-	params.Add("mobile", paylinkRequest.Mobile)
-	params.Add("address", paylinkRequest.Address)
-	params.Add("city", paylinkRequest.City)
-	params.Add("zip", paylinkRequest.Zip)
-	params.Add("country", paylinkRequest.Country)
+	addIfExists(params,"customerNumber", paylinkRequest.CustomerNumber)
+	addIfExists(params,"email", paylinkRequest.Email)
+	addIfExists(params,"lastname", paylinkRequest.Lastname)
+	addIfExists(params,"firstname", paylinkRequest.Firstname)
+	addIfExists(params,"l", paylinkRequest.Language)
+	addIfExists(params,"mobile", paylinkRequest.Mobile)
+	addIfExists(params,"address", paylinkRequest.Address)
+	addIfExists(params,"city", paylinkRequest.City)
+	addIfExists(params,"zip", paylinkRequest.Zip)
+	addIfExists(params,"country", paylinkRequest.Country)
+
+	c.debug("New link", params.Encode())
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
 	var paylink Paylink
-	err := c.sendRequest(req, paylink)
+	err := c.sendRequest(req, &paylink)
 	if err != nil {
 		return nil, err
 	}

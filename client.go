@@ -1,11 +1,16 @@
 package twikey
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -31,9 +36,10 @@ type TwikeyClient struct {
 
 func NewClient(apiKey string) *TwikeyClient {
 	return &TwikeyClient{
-		BaseURL: BaseURLV1,
-		ApiKey:  apiKey,
-		Salt:    "own",
+		BaseURL:   BaseURLV1,
+		ApiKey:    apiKey,
+		Salt:      "own",
+		UserAgent: TWIKEY_VERSION,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
@@ -64,12 +70,10 @@ func (c *TwikeyClient) sendRequest(req *http.Request, v interface{}) error {
 		return err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", c.apiToken)
-
-	c.debug(req.Body)
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -77,6 +81,8 @@ func (c *TwikeyClient) sendRequest(req *http.Request, v interface{}) error {
 	}
 
 	defer res.Body.Close()
+	//body,_ := ioutil.ReadAll(res.Body)
+	//print(body)
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		var errRes errorResponse
@@ -86,9 +92,29 @@ func (c *TwikeyClient) sendRequest(req *http.Request, v interface{}) error {
 		return fmt.Errorf("Unknown error, status code: %d", res.StatusCode)
 	}
 
-	if err = json.NewDecoder(res.Body).Decode(v); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&v); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (c *TwikeyClient) verifyWebhook(signatureHeader string, payload string) error {
+	hash := hmac.New(sha256.New, []byte(c.ApiKey))
+	if _, err := hash.Write([]byte(payload)); err != nil {
+		c.error("Cannot compute the HMAC for request: ", err)
+		return err
+	}
+
+	expectedHash := strings.ToUpper(hex.EncodeToString(hash.Sum(nil)))
+	if signatureHeader == expectedHash {
+		return nil
+	}
+	return errors.New("Invalid value")
+}
+
+func addIfExists(params url.Values, paramKey string, value string) {
+	if value != "" {
+		params.Add(paramKey, value)
+	}
 }

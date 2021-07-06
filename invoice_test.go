@@ -8,8 +8,12 @@ import (
 )
 
 func TestInvoiceFeed(t *testing.T) {
+	if os.Getenv("TWIKEY_API_KEY") == "" {
+		t.Skip("No TWIKEY_API_KEY available")
+	}
+
 	c := TwikeyClient{
-		BaseURL: getEnv("TWIKEY_URL", "https://api.twikey.com"),
+		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
 		ApiKey:  os.Getenv("TWIKEY_API_KEY"),
 		//Debug: log.Default(),
 		HTTPClient: &http.Client{
