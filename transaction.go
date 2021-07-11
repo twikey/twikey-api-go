@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// TransactionRequest is the payload to be send to Twikey when a new transaction should be send
 type TransactionRequest struct {
 	DocumentReference             string
 	TransactionDate               string
@@ -21,6 +22,7 @@ type TransactionRequest struct {
 	ReferenceIsEndToEndIdentifier bool
 }
 
+// Transaction is the response from Twikey when updates are received
 type Transaction struct {
 	Id                  int64   `json:"id,omitempty"`
 	DocumentId          int64   `json:"contractId,omitempty"`
@@ -37,11 +39,13 @@ type Transaction struct {
 	RequestedCollection string  `json:"reqcolldt"`
 }
 
+// TransactionList is a struct to contain the response coming from Twikey, should be considered internal
 type TransactionList struct {
 	Entries []Transaction
 }
 
-func (c *TwikeyClient) TransactionNew(transaction TransactionRequest) (*Transaction, error) {
+// TransactionNew sends a new transaction to Twikey
+func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, error) {
 
 	params := url.Values{}
 	params.Add("mndtId", transaction.DocumentReference)
@@ -66,7 +70,8 @@ func (c *TwikeyClient) TransactionNew(transaction TransactionRequest) (*Transact
 	return &transactionList.Entries[0], nil
 }
 
-func (c *TwikeyClient) TransactionFeed(callback func(transaction Transaction)) error {
+// TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
+func (c *Client) TransactionFeed(callback func(transaction Transaction)) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err

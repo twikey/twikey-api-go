@@ -47,20 +47,20 @@ func generateOtp(_salt string, _privKey string) (int, error) {
 	return int(v % 100000000), nil
 }
 
-func (c *TwikeyClient) refreshTokenIfRequired() error {
+func (c *Client) refreshTokenIfRequired() error {
 
 	if time.Now().Sub(c.lastLogin).Hours() < 23 {
 		return nil
 	}
 
 	params := url.Values{}
-	params.Add("apiToken", c.ApiKey)
+	params.Add("apiToken", c.APIKey)
 	if c.PrivateKey != "" {
 		otp, _ := generateOtp(c.Salt, c.PrivateKey)
 		params.Add("otp", fmt.Sprint(otp))
 	}
 
-	c.debug("Connecting to", c.BaseURL, " with ", c.ApiKey)
+	c.debug("Connecting to", c.BaseURL, " with ", c.APIKey)
 
 	req, err := http.NewRequest("POST", c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
 	if err == nil {
@@ -85,13 +85,12 @@ func (c *TwikeyClient) refreshTokenIfRequired() error {
 		c.apiToken = ""
 		c.lastLogin = time.Unix(0, 0)
 		return err
-	} else {
-		c.error("Not connected :", err)
-		return err
 	}
+	c.error("Not connected :", err)
+	return err
 }
 
-func (c *TwikeyClient) logout() {
+func (c *Client) logout() {
 	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor", nil)
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

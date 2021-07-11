@@ -15,6 +15,8 @@ payment options of your favorite PSP to allow other customers to pay as well.
 
 ## Requirements ##
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/twikey/twikey-api-go.svg)](https://pkg.go.dev/github.com/twikey/twikey-api-go)
+
 To use the Twikey API client, the following things are required:
 
 + Get yourself a [Twikey account](https://www.twikey.com).

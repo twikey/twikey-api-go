@@ -12,9 +12,9 @@ func TestTransactions(t *testing.T) {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
 
-	c := TwikeyClient{
+	c := Client{
 		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		ApiKey:  os.Getenv("TWIKEY_API_KEY"),
+		APIKey:  os.Getenv("TWIKEY_API_KEY"),
 		//Debug: log.Default(),
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,

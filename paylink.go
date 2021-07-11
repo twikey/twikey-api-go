@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// PaylinkRequest is the base object for sending and receiving paylinks to Twikey
 type PaylinkRequest struct {
 	CustomerNumber string  //	The customer number (strongly advised)
 	Email          string  //	Email of the debtor	(Required to send invite)
@@ -34,41 +35,43 @@ type PaylinkRequest struct {
 	Invoice        string  //	create payment link for specific invoice number
 }
 
+// Paylink is the response receiving from Twikey upon a request
 type Paylink struct {
 	Id     int64   `json:"id,omitempty"`
 	Amount float64 `json:"amount,omitempty"`
 	Msg    string  `json:"msg,omitempty"`
 	Ref    string  `json:"ref,omitempty"`
 	State  string  `json:"state,omitempty"`
-	Url  string  `json:"url,omitempty"`
+	Url    string  `json:"url,omitempty"`
 }
 
-func (c *TwikeyClient) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
+// PaylinkNew sends the new paylink to Twikey for creation
+func (c *Client) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
 
 	params := url.Values{}
-	addIfExists(params,"ct", paylinkRequest.Template)
-	addIfExists(params,"ct", paylinkRequest.Template)
-	addIfExists(params,"title", paylinkRequest.Title)
-	addIfExists(params,"remittance", paylinkRequest.Remittance)
-	addIfExists(params,"amount", fmt.Sprintf("%.2f", paylinkRequest.Amount))
-	addIfExists(params,"redirectUrl", paylinkRequest.RedirectUrl)
-	addIfExists(params,"place", paylinkRequest.Place)
-	addIfExists(params,"expiry", paylinkRequest.Expiry)
-	addIfExists(params,"sendInvite", paylinkRequest.SendInvite)
-	addIfExists(params,"txref", paylinkRequest.Txref)
-	addIfExists(params,"method", paylinkRequest.Method)
-	addIfExists(params,"invoice", paylinkRequest.Invoice)
+	addIfExists(params, "ct", paylinkRequest.Template)
+	addIfExists(params, "ct", paylinkRequest.Template)
+	addIfExists(params, "title", paylinkRequest.Title)
+	addIfExists(params, "remittance", paylinkRequest.Remittance)
+	addIfExists(params, "amount", fmt.Sprintf("%.2f", paylinkRequest.Amount))
+	addIfExists(params, "redirectUrl", paylinkRequest.RedirectUrl)
+	addIfExists(params, "place", paylinkRequest.Place)
+	addIfExists(params, "expiry", paylinkRequest.Expiry)
+	addIfExists(params, "sendInvite", paylinkRequest.SendInvite)
+	addIfExists(params, "txref", paylinkRequest.Txref)
+	addIfExists(params, "method", paylinkRequest.Method)
+	addIfExists(params, "invoice", paylinkRequest.Invoice)
 
-	addIfExists(params,"customerNumber", paylinkRequest.CustomerNumber)
-	addIfExists(params,"email", paylinkRequest.Email)
-	addIfExists(params,"lastname", paylinkRequest.Lastname)
-	addIfExists(params,"firstname", paylinkRequest.Firstname)
-	addIfExists(params,"l", paylinkRequest.Language)
-	addIfExists(params,"mobile", paylinkRequest.Mobile)
-	addIfExists(params,"address", paylinkRequest.Address)
-	addIfExists(params,"city", paylinkRequest.City)
-	addIfExists(params,"zip", paylinkRequest.Zip)
-	addIfExists(params,"country", paylinkRequest.Country)
+	addIfExists(params, "customerNumber", paylinkRequest.CustomerNumber)
+	addIfExists(params, "email", paylinkRequest.Email)
+	addIfExists(params, "lastname", paylinkRequest.Lastname)
+	addIfExists(params, "firstname", paylinkRequest.Firstname)
+	addIfExists(params, "l", paylinkRequest.Language)
+	addIfExists(params, "mobile", paylinkRequest.Mobile)
+	addIfExists(params, "address", paylinkRequest.Address)
+	addIfExists(params, "city", paylinkRequest.City)
+	addIfExists(params, "zip", paylinkRequest.Zip)
+	addIfExists(params, "country", paylinkRequest.Country)
 
 	c.debug("New link", params.Encode())
 
@@ -81,7 +84,8 @@ func (c *TwikeyClient) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, erro
 	return &paylink, nil
 }
 
-func (c *TwikeyClient) PaylinkFeed(callback func(paylink Paylink)) error {
+// PaylinkFeed retrieves the feed of updated paylinks since last call
+func (c *Client) PaylinkFeed(callback func(paylink Paylink)) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -107,8 +111,7 @@ func (c *TwikeyClient) PaylinkFeed(callback func(paylink Paylink)) error {
 		}
 		_ = res.Body.Close()
 		return nil
-	} else {
-		c.error("Invalid response from Twikey: ", res.StatusCode)
-		return errors.New(res.Status)
 	}
+	c.error("Invalid response from Twikey: ", res.StatusCode)
+	return errors.New(res.Status)
 }

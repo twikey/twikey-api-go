@@ -12,9 +12,9 @@ func TestDocumentFeed(t *testing.T) {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
 
-	c := TwikeyClient{
+	c := Client{
 		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		ApiKey:  os.Getenv("TWIKEY_API_KEY"),
+		APIKey:  os.Getenv("TWIKEY_API_KEY"),
 		//Debug:   log.Default(),
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
@@ -22,24 +22,24 @@ func TestDocumentFeed(t *testing.T) {
 	}
 
 	invite, err := c.DocumentInvite(InviteRequest{
-		ct:             getEnv("CT", "1"),
-		customerNumber: "123",
-		amount:         "123.10",
-		email:          "john@doe.com",
-		firstname:      "John",
-		lastname:       "Doe",
-		l:              "en",
-		address:        "Abbey road",
-		city:           "Liverpool",
-		zip:            "1526",
-		country:        "BE",
-		mobile:         "",
-		companyName:    "",
-		coc:            "",
-		iban:           "",
-		bic:            "",
-		mandateNumber:  "",
-		contractNumber: "",
+		Template:       getEnv("CT", "1"),
+		CustomerNumber: "123",
+		Amount:         "123.10",
+		Email:          "john@doe.com",
+		Firstname:      "John",
+		Lastname:       "Doe",
+		Language:       "en",
+		Address:        "Abbey road",
+		City:           "Liverpool",
+		Zip:            "1526",
+		Country:        "BE",
+		Mobile:         "",
+		CompanyName:    "",
+		Coc:            "",
+		Iban:           "",
+		Bic:            "",
+		MandateNumber:  "",
+		ContractNumber: "",
 	})
 	if err != nil {
 		t.Fatal(err)

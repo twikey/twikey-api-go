@@ -1,3 +1,4 @@
+// Package twikey provides the bindings for Twikey REST APIs.
 package twikey
 
 import (
@@ -15,13 +16,15 @@ import (
 )
 
 const (
-	BaseURLV1      = "https://api.twikey.com"
-	TWIKEY_VERSION = "twikey-api/go"
+	baseURLV1       = "https://api.twikey.com"
+	twikeyBaseAgent = "twikey-api/go-v0.1.1"
 )
 
-type TwikeyClient struct {
+// Client is the base class, please use a dedicated UserAgent so we can notify the emergency contact
+// if weird behaviour is perceived.
+type Client struct {
 	BaseURL    string
-	ApiKey     string
+	APIKey     string
 	PrivateKey string
 	Salt       string
 	UserAgent  string
@@ -34,12 +37,13 @@ type TwikeyClient struct {
 	lastLogin time.Time
 }
 
-func NewClient(apiKey string) *TwikeyClient {
-	return &TwikeyClient{
-		BaseURL:   BaseURLV1,
-		ApiKey:    apiKey,
+// NewClient is a convenience method to hit the ground running with the Twikey Rest API
+func NewClient(apiKey string) *Client {
+	return &Client{
+		BaseURL:   baseURLV1,
+		APIKey:    apiKey,
 		Salt:      "own",
-		UserAgent: TWIKEY_VERSION,
+		UserAgent: twikeyBaseAgent,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
@@ -52,19 +56,19 @@ type errorResponse struct {
 	Extra   string `json:"extra"`
 }
 
-func (c *TwikeyClient) debug(v ...interface{}) {
+func (c *Client) debug(v ...interface{}) {
 	if c.Debug != nil {
 		c.Debug.Println(v...)
 	}
 }
 
-func (c *TwikeyClient) error(v ...interface{}) {
+func (c *Client) error(v ...interface{}) {
 	if c.Debug != nil {
 		c.Debug.Fatal(v...)
 	}
 }
 
-func (c *TwikeyClient) sendRequest(req *http.Request, v interface{}) error {
+func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -99,8 +103,9 @@ func (c *TwikeyClient) sendRequest(req *http.Request, v interface{}) error {
 	return nil
 }
 
-func (c *TwikeyClient) verifyWebhook(signatureHeader string, payload string) error {
-	hash := hmac.New(sha256.New, []byte(c.ApiKey))
+// VerifyWebhook allows the verification of incoming webhooks.
+func (c *Client) VerifyWebhook(signatureHeader string, payload string) error {
+	hash := hmac.New(sha256.New, []byte(c.APIKey))
 	if _, err := hash.Write([]byte(payload)); err != nil {
 		c.error("Cannot compute the HMAC for request: ", err)
 		return err

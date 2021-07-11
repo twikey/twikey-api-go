@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// Invoice is the base object for sending and receiving invoices to Twikey
 type Invoice struct {
 	Id         string          `json:"id,omitempty"`
 	Number     string          `json:"number"`
@@ -25,6 +26,7 @@ type Invoice struct {
 	Meta       invoiceFeedMeta `json:"meta,omitempty"`
 }
 
+// Customer is a json wrapper for usage inside the Invoice object
 type Customer struct {
 	Email     string `json:"email,omitempty"`
 	FirstName string `json:"firstName"`
@@ -33,23 +35,26 @@ type Customer struct {
 	City      string `json:"city"`
 	Zip       string `json:"zip"`
 	Country   string `json:"country"`
-	L         string `json:"l"`
+	Language  string `json:"l"`
 	Mobile    string `json:"mobile,omitempty"`
 }
 
+// InvoiceFeed is a struct to contain the response coming from Twikey, should be considered internal
 type InvoiceFeed struct {
 	Invoices []Invoice
 }
 
+// IsPaid convenience method
 func (inv *Invoice) IsPaid() bool {
 	return inv.State == "PAID"
 }
 
+// HasMeta convenience method to indicate that there is extra info available on the invoice
 func (inv *Invoice) HasMeta() bool {
 	return inv.Meta != invoiceFeedMeta{}
 }
 
-// invoices go from pending to booked or expired when payment failed
+// IsFailed allows to distinguish invoices since they go from pending to booked or expired when payment failed
 func (inv *Invoice) IsFailed() bool {
 	return inv.State == "BOOKED" || inv.State == "EXPIRED"
 }
@@ -58,7 +63,8 @@ type invoiceFeedMeta struct {
 	LastError string `json:"lastError,omitempty"`
 }
 
-func (c *TwikeyClient) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string) (*Invoice, error) {
+// InvoiceFromUbl sends an invoice to Twikey in UBL format
+func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -93,8 +99,8 @@ func (c *TwikeyClient) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref 
 	return nil, errors.New(errcode)
 }
 
-//Get invoice Feed twikey
-func (c *TwikeyClient) InvoiceFeed(callback func(invoice Invoice)) error {
+//InvoiceFeed Get invoice Feed twikey
+func (c *Client) InvoiceFeed(callback func(invoice Invoice)) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err

@@ -12,59 +12,66 @@ import (
 	"strings"
 )
 
+// InviteRequest contains all possible parameters that can be send to invite a customer
+// to sign a document
 type InviteRequest struct {
-	ct               string // mandatory
-	customerNumber   string
-	email            string
-	mobile           string
-	l                string
-	lastname         string
-	firstname        string
-	mandateNumber    string
-	contractNumber   string
-	companyName      string
-	coc              string
-	address          string
-	city             string
-	zip              string
-	country          string
-	overrideFromDate string
-	amount           string
-	iban             string
-	bic              string
-	campaign         string
+	Template       string // mandatory
+	CustomerNumber string
+	Email          string
+	Mobile         string
+	Language       string
+	Lastname       string
+	Firstname      string
+	MandateNumber  string
+	ContractNumber string
+	CompanyName    string
+	Coc            string
+	Address        string
+	City           string
+	Zip            string
+	Country        string
+	SignDate       string
+	Amount         string
+	Iban           string
+	Bic            string
+	Campaign       string
 }
 
+// Invite is the response containing the documentNumber, key and the url to point the customer too.
 type Invite struct {
-	Url string
-	Key string
+	MndtId string // documentNumber
+	Url    string // where the customer can sign the document
+	Key    string // specific invite key
 }
 
+// UpdateRequest contains all possible parameters that can be send to update a document
 type UpdateRequest struct {
-	mndtId         string // mandateNumber
-	state          string //active or passive (activated or suspend mandate)
-	mobile         string //	Owner's mobile number
-	iban           string //	Debtor's IBAN
-	bic            string //	Debtor's BIC code
-	email          string //	email address of debtor
-	firstname      string //	Firstname of the debtor
-	lastname       string //	Lastname of the debtor
-	companyName    string //	Company name on the mandate
-	vatno          string //	The enterprise number (can only be changed if companyName is changed)
-	customerNumber string //	The customer number (can be added, updated or used to move a mandate)
-	l              string //	language on the mandate (ISO 2 letters)
-	address        string //	Address (street + number)
-	city           string //	City of debtor
-	zip            string //	Zipcode of debtor
-	country        string //	Country of debtor
+	MandateNumber  string // Document or MandateNumber
+	State          string // active or passive (activated or suspend mandate)
+	Mobile         string // Owner's mobile number
+	Iban           string // Debtor's IBAN
+	Bic            string // Debtor's BIC code
+	Email          string // email address of debtor
+	Firstname      string // Firstname of the debtor
+	Lastname       string // Lastname of the debtor
+	CompanyName    string // Company name on the mandate
+	Vatno          string // The enterprise number (can only be changed if companyName is changed)
+	CustomerNumber string // The customer number (can be added, updated or used to move a mandate)
+	Language       string // language on the mandate (ISO 2 letters)
+	Address        string // Address (street + number)
+	City           string // City of debtor
+	Zip            string // Zipcode of debtor
+	Country        string // Country of debtor
 }
 
+// CtctDtls contains all contact details for a specific document
 type CtctDtls struct {
 	EmailAdr string
 	MobNb    string
 	Othr     string
 }
 
+// PstlAdr contains address data for a specific document
 type PstlAdr struct {
 	AdrLine string
 	PstCd   string
@@ -72,6 +79,7 @@ type PstlAdr struct {
 	Ctry    string
 }
 
+// Prty contains party details for a specific document
 type Prty struct {
 	Nm       string
 	PstlAdr  PstlAdr
@@ -79,6 +87,7 @@ type Prty struct {
 	CtctDtls CtctDtls
 }
 
+// KeyValue key value pairs of extra data in a document
 type KeyValue struct {
 	Key   string
 	Value interface{}
@@ -100,13 +109,18 @@ type Mndt struct {
 	RfrdDoc     string
 	SplmtryData []KeyValue
 }
+
+// AmdmntRsn contains the reason why something was updated
 type AmdmntRsn struct {
 	Rsn string
 }
+
+// CxlRsn contains the reason why something was cancelled
 type CxlRsn struct {
 	Rsn string
 }
 
+// MandateUpdate contains all info regarding a new/update or cancelled document
 type MandateUpdate struct {
 	Mndt        *Mndt
 	AmdmntRsn   *AmdmntRsn `json:",omitempty"`
@@ -115,40 +129,42 @@ type MandateUpdate struct {
 	EvtTime     string
 }
 
+// MandateUpdates is a struct to contain the response coming from Twikey, should be considered internal
 type MandateUpdates struct {
 	Messages []MandateUpdate
 }
 
-func (c *TwikeyClient) DocumentInvite(request InviteRequest) (*Invite, error) {
+// DocumentInvite allows to invite a customer to sign a specific document
+func (c *Client) DocumentInvite(request InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
 	}
 
-	if request.ct == "" {
+	if request.Template == "" {
 		return nil, errors.New("A template is required")
 	}
 	params := url.Values{}
-	params.Add("ct", request.ct)
-	params.Add("customerNumber", request.customerNumber)
-	params.Add("email", request.email)
-	params.Add("mobile", request.mobile)
-	params.Add("l", request.l)
-	params.Add("lastname", request.lastname)
-	params.Add("firstname", request.firstname)
-	params.Add("mandateNumber", request.mandateNumber)
-	params.Add("contractNumber", request.contractNumber)
-	params.Add("companyName", request.companyName)
-	params.Add("coc", request.coc)
-	params.Add("address", request.address)
-	params.Add("city", request.city)
-	params.Add("zip", request.zip)
-	params.Add("country", request.country)
-	params.Add("overrideFromDate", request.overrideFromDate)
-	params.Add("amount", request.amount)
-	params.Add("iban", request.iban)
-	params.Add("bic", request.bic)
-	params.Add("campaign", request.campaign)
+	params.Add("ct", request.Template)
+	params.Add("customerNumber", request.CustomerNumber)
+	params.Add("email", request.Email)
+	params.Add("mobile", request.Mobile)
+	params.Add("l", request.Language)
+	params.Add("lastname", request.Lastname)
+	params.Add("firstname", request.Firstname)
+	params.Add("mandateNumber", request.MandateNumber)
+	params.Add("contractNumber", request.ContractNumber)
+	params.Add("companyName", request.CompanyName)
+	params.Add("coc", request.Coc)
+	params.Add("address", request.Address)
+	params.Add("city", request.City)
+	params.Add("zip", request.Zip)
+	params.Add("country", request.Country)
+	params.Add("overrideFromDate", request.SignDate)
+	params.Add("amount", request.Amount)
+	params.Add("iban", request.Iban)
+	params.Add("bic", request.Bic)
+	params.Add("campaign", request.Campaign)
 
 	c.debug("New document", params.Encode())
 
@@ -160,35 +176,36 @@ func (c *TwikeyClient) DocumentInvite(request InviteRequest) (*Invite, error) {
 	return &invite, nil
 }
 
-func (c *TwikeyClient) CocumentUpdate(request UpdateRequest) error {
+// DocumentUpdate allows to update a previously added document
+func (c *Client) DocumentUpdate(request UpdateRequest) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
 	params := url.Values{}
-	if request.mndtId == "" {
+	if request.MandateNumber == "" {
 		return errors.New("A mndtId is required")
 	}
 
-	params.Add("mndtId", request.mndtId)
-	params.Add("state", request.state)
-	params.Add("mobile", request.mobile)
-	params.Add("iban", request.iban)
-	params.Add("bic", request.bic)
-	params.Add("email", request.email)
-	params.Add("firstname", request.firstname)
-	params.Add("lastname", request.lastname)
-	params.Add("companyName", request.companyName)
-	params.Add("vatno", request.vatno)
-	params.Add("customerNumber", request.customerNumber)
-	params.Add("l", request.l)
-	params.Add("address", request.address)
-	params.Add("city", request.city)
-	params.Add("zip", request.zip)
-	params.Add("country", request.country)
+	params.Add("mndtId", request.MandateNumber)
+	params.Add("state", request.State)
+	params.Add("mobile", request.Mobile)
+	params.Add("iban", request.Iban)
+	params.Add("bic", request.Bic)
+	params.Add("email", request.Email)
+	params.Add("firstname", request.Firstname)
+	params.Add("lastname", request.Lastname)
+	params.Add("companyName", request.CompanyName)
+	params.Add("vatno", request.Vatno)
+	params.Add("customerNumber", request.CustomerNumber)
+	params.Add("l", request.Language)
+	params.Add("address", request.Address)
+	params.Add("city", request.City)
+	params.Add("zip", request.Zip)
+	params.Add("country", request.Country)
 
-	c.debug("Update document", request.mndtId, params)
+	c.debug("Update document", request.MandateNumber, params)
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/mandate/update", strings.NewReader(params.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -203,7 +220,8 @@ func (c *TwikeyClient) CocumentUpdate(request UpdateRequest) error {
 	return nil
 }
 
-func (c *TwikeyClient) DocumentCancel(mandate string, reason string) error {
+// DocumentCancel allows to cancel (or delete if unsigned) a previously added document
+func (c *Client) DocumentCancel(mandate string, reason string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -230,7 +248,8 @@ func (c *TwikeyClient) DocumentCancel(mandate string, reason string) error {
 	return nil
 }
 
-func (c *TwikeyClient) DocumentFeed(
+// DocumentFeed retrieves all documents since the last call with callbacks since there may be many
+func (c *Client) DocumentFeed(
 	newDocument func(mandate Mndt),
 	updateDocument func(mandate Mndt, reason AmdmntRsn),
 	cancelledDocument func(mandate string, reason CxlRsn)) error {
@@ -255,7 +274,7 @@ func (c *TwikeyClient) DocumentFeed(
 				return err
 			}
 
-			res.Body.Close()
+			defer res.Body.Close()
 			c.debug(fmt.Sprintf("Fetched %d documents", len(updates.Messages)))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
@@ -276,7 +295,8 @@ func (c *TwikeyClient) DocumentFeed(
 	}
 }
 
-func (c *TwikeyClient) DownloadPdf(mndtId string, downloadFile string) error {
+// DownloadPdf allows the download of a specific (signed) pdf
+func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
 
@@ -300,8 +320,7 @@ func (c *TwikeyClient) DownloadPdf(mndtId string, downloadFile string) error {
 			fmt.Println("Saving to file:", absPath)
 		}
 		return err
-	} else {
-		fmt.Println("Unable to download file:", absPath)
 	}
+	fmt.Println("Unable to download file:", absPath)
 	return errors.New(res.Status)
 }
