@@ -39,7 +39,7 @@ func TestTransactions(t *testing.T) {
 
 	t.Run("New reservation with valid mandate ", func(t *testing.T) {
 		tx, err := c.TransactionNew(TransactionRequest{
-			DocumentReference: "REG3",
+			DocumentReference: getEnv("MNDTNUMBER","ABC"),
 			Msg:               "My Transaction",
 			Ref:               "My Reference",
 			Amount:            10.90,

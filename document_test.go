@@ -44,7 +44,10 @@ func TestDocumentFeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(invite.Url)
+
+	if invite == nil || invite.Url == "" {
+		t.Error("No valid invite retrieved")
+	}
 
 	t.Run("DocumentFeed", func(t *testing.T) {
 		err := c.DocumentFeed(func(new Mndt) {

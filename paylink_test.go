@@ -33,7 +33,10 @@ func TestPaylinkFeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(paylink.Url)
+
+	if paylink == nil || paylink.Url == "" {
+		t.Error("No valid link retrieved")
+	}
 
 	t.Run("PaylinkFeed", func(t *testing.T) {
 		err := c.PaylinkFeed(func(paylink Paylink) {
