@@ -20,6 +20,8 @@ type TransactionRequest struct {
 	Amount                        float64
 	Place                         string
 	ReferenceIsEndToEndIdentifier bool
+	Reservation                   bool
+	Force                         bool
 }
 
 // Transaction is the response from Twikey when updates are received
@@ -55,6 +57,12 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 	params.Add("message", transaction.Msg)
 	params.Add("ref", transaction.Ref)
 	params.Add("place", transaction.Place)
+	if transaction.Force {
+		params.Add("force", "true")
+	}
+	if transaction.Reservation {
+		params.Add("reservation", "true")
+	}
 	if transaction.ReferenceIsEndToEndIdentifier {
 		params.Add("refase2e", "true")
 	}
@@ -62,12 +70,18 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 	c.debug("New transaction", params)
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
-	var transactionList TransactionList
-	err := c.sendRequest(req, transactionList)
-	if err != nil {
+	var err error;
+	if transaction.Reservation {
+		err = c.sendRequest(req, nil)
 		return nil, err
+	} else {
+		var transactionList TransactionList
+		err = c.sendRequest(req, transactionList)
+		if err != nil {
+			return nil, err
+		}
+		return &transactionList.Entries[0], nil
 	}
-	return &transactionList.Entries[0], nil
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many

@@ -213,7 +213,7 @@ func (c *Client) DocumentUpdate(request UpdateRequest) error {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	_, err := c.HTTPClient.Do(req)
+	err := c.sendRequest(req,nil)
 	if err != nil {
 		return err
 	}
@@ -239,13 +239,8 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	res, _ := c.HTTPClient.Do(req)
-	if res.StatusCode > 300 {
-		err := res.Header["Apierror"][0]
-		c.error("Invalid response from Twikey:", err, res.StatusCode)
-		return errors.New(err)
-	}
-	return nil
+	err := c.sendRequest(req,nil)
+	return err
 }
 
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many

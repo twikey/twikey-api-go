@@ -37,6 +37,24 @@ func TestTransactions(t *testing.T) {
 		}
 	})
 
+	t.Run("New reservation with valid mandate ", func(t *testing.T) {
+		tx, err := c.TransactionNew(TransactionRequest{
+			DocumentReference: "REG3",
+			Msg:               "My Transaction",
+			Ref:               "My Reference",
+			Amount:            10.90,
+			Reservation:       true,
+			Force:       	   true, // allow second reservation
+		})
+		if err != nil {
+			if err.Error() != "No contract was found" && err.Error() != "Not authorised" {
+				t.Fatal(err)
+			}
+		} else if tx != nil {
+			t.Fatal(tx)
+		}
+	})
+
 	t.Run("TransactionFeed", func(t *testing.T) {
 		err := c.TransactionFeed(func(transaction Transaction) {
 			t.Log("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
