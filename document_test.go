@@ -61,5 +61,35 @@ func TestDocumentFeed(t *testing.T) {
 			return
 		}
 	})
+}
+
+func TestDocumentDetail(t *testing.T) {
+	if os.Getenv("TWIKEY_API_KEY") == "" {
+		t.Skip("No TWIKEY_API_KEY available")
+	}
+
+	if os.Getenv("MNDTNUMBER") == "" {
+		t.Skip("No MNDTNUMBER available")
+	}
+
+	c := Client{
+		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
+		APIKey:  os.Getenv("TWIKEY_API_KEY"),
+		//Debug:   log.Default(),
+		HTTPClient: &http.Client{
+			Timeout: time.Minute,
+		},
+	}
+
+	mndt, err := c.DocumentDetail(os.Getenv("MNDTNUMBER"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if mndt == nil {
+		t.Error("No valid mandate retrieved")
+	} else {
+		t.Log("new", mndt.MndtId)
+	}
 
 }

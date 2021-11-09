@@ -319,3 +319,37 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 	fmt.Println("Unable to download file:", absPath)
 	return errors.New(res.Status)
 }
+
+// DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited
+func (c *Client) DocumentDetail(mndtId string) (*Mndt,error) {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return nil, err
+	}
+
+	params := url.Values{}
+	params.Add("mndtId", mndtId)
+
+	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	println(c.apiToken)
+
+	res, _ := c.HTTPClient.Do(req)
+	if res.StatusCode == 200 {
+		payload, _ := ioutil.ReadAll(res.Body)
+
+		var mndt Mndt
+		err := json.Unmarshal(payload, &mndt)
+		if err != nil {
+			return nil,err
+		}
+
+		return &mndt,nil
+	}
+	errcode := res.Header["Apierror"][0]
+	return nil, errors.New(errcode)
+}
