@@ -89,7 +89,6 @@ func TestDocumentDetail(t *testing.T) {
 	if mndt == nil {
 		t.Error("No valid mandate retrieved")
 	} else {
-		t.Log("new", mndt.MndtId)
+		t.Log("Got Mandate", mndt.MndtId)
 	}
-
 }

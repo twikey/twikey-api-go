@@ -14,7 +14,7 @@ type Invoice struct {
 	Id         string          `json:"id,omitempty"`
 	Number     string          `json:"number"`
 	Title      string          `json:"title"`
-	Remittence string          `json:"remittence"`
+	Remittance string          `json:"remittance"`
 	Ct         int             `json:"ct,omitempty"`
 	State      string          `json:"state,omitempty"`
 	Amount     float64         `json:"amount"`
@@ -28,15 +28,16 @@ type Invoice struct {
 
 // Customer is a json wrapper for usage inside the Invoice object
 type Customer struct {
-	Email     string `json:"email,omitempty"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Address   string `json:"address"`
-	City      string `json:"city"`
-	Zip       string `json:"zip"`
-	Country   string `json:"country"`
-	Language  string `json:"l"`
-	Mobile    string `json:"mobile,omitempty"`
+	CustomerNumber string `json:"customerNumber,omitempty"`
+	Email          string `json:"email,omitempty"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	Address        string `json:"address"`
+	City           string `json:"city"`
+	Zip            string `json:"zip"`
+	Country        string `json:"country"`
+	Language       string `json:"l"`
+	Mobile         string `json:"mobile,omitempty"`
 }
 
 // InvoiceFeed is a struct to contain the response coming from Twikey, should be considered internal
@@ -61,6 +62,46 @@ func (inv *Invoice) IsFailed() bool {
 
 type invoiceFeedMeta struct {
 	LastError string `json:"lastError,omitempty"`
+}
+
+// InvoiceFromUbl sends an invoice to Twikey in UBL format
+func (c *Client) InvoiceAdd(ctx context.Context, invoice Invoice) (*Invoice, error) {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return nil, err
+	}
+
+	invoiceBytes, err := json.Marshal(invoice)
+	if err != nil {
+		return nil, err
+	}
+
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
+	req.WithContext(ctx)
+	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Authorization", c.apiToken) //Already there
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+
+	res, _ := c.HTTPClient.Do(req)
+	if res.StatusCode == 200 {
+		payload, _ := ioutil.ReadAll(res.Body)
+		c.debug("TwikeyInvoice: ", string(payload))
+		if res.Header["X-Warning"] != nil {
+			c.error("Warning for", invoice.Number, res.Header["X-Warning"])
+		}
+		var invoice Invoice
+		err := json.Unmarshal(payload, &invoice)
+		if err != nil {
+			return nil, err
+		}
+		return &invoice, nil
+	}
+
+	errcode := res.Header["Apierror"][0]
+	errLoad, _ := ioutil.ReadAll(res.Body)
+	c.error("ERROR sending ubl invoice to Twikey: ", string(errLoad))
+	return nil, errors.New(errcode)
 }
 
 // InvoiceFromUbl sends an invoice to Twikey in UBL format

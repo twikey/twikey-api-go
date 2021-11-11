@@ -110,6 +110,10 @@ type Mndt struct {
 	SplmtryData []KeyValue
 }
 
+type MndtDetail struct {
+	Mndt Mndt
+}
+
 // AmdmntRsn contains the reason why something was updated
 type AmdmntRsn struct {
 	Rsn string
@@ -213,7 +217,7 @@ func (c *Client) DocumentUpdate(request UpdateRequest) error {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	err := c.sendRequest(req,nil)
+	err := c.sendRequest(req, nil)
 	if err != nil {
 		return err
 	}
@@ -239,7 +243,7 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	err := c.sendRequest(req,nil)
+	err := c.sendRequest(req, nil)
 	return err
 }
 
@@ -321,7 +325,7 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 }
 
 // DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited
-func (c *Client) DocumentDetail(mndtId string) (*Mndt,error) {
+func (c *Client) DocumentDetail(mndtId string) (*Mndt, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -336,19 +340,17 @@ func (c *Client) DocumentDetail(mndtId string) (*Mndt,error) {
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Add("Authorization", c.apiToken)
 
-	println(c.apiToken)
-
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 
-		var mndt Mndt
+		var mndt MndtDetail
 		err := json.Unmarshal(payload, &mndt)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 
-		return &mndt,nil
+		return &mndt.Mndt, nil
 	}
 	errcode := res.Header["Apierror"][0]
 	return nil, errors.New(errcode)

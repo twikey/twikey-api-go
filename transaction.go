@@ -70,7 +70,7 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 	c.debug("New transaction", params)
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
-	var err error;
+	var err error
 	if transaction.Reservation {
 		err = c.sendRequest(req, nil)
 		return nil, err
