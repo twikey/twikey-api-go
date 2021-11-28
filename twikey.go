@@ -20,6 +20,10 @@ const (
 	twikeyBaseAgent = "twikey-api/go-v0.1.1"
 )
 
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // Client is the base class, please use a dedicated UserAgent so we can notify the emergency contact
 // if weird behaviour is perceived.
 type Client struct {
@@ -29,7 +33,7 @@ type Client struct {
 	Salt       string
 	UserAgent  string
 
-	HTTPClient *http.Client
+	HTTPClient HTTPClient
 
 	Debug *log.Logger
 
