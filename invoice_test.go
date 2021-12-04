@@ -54,7 +54,7 @@ func TestInvoiceAdd(t *testing.T) {
 			Duedate:    "2021-03-01",
 			Remittance: "123",
 			Amount:     10.00,
-			Customer: Customer{
+			Customer: &Customer{
 				CustomerNumber: "123",
 				Email:          "support@twikey.com",
 				Address:        "Derbystraat 43",

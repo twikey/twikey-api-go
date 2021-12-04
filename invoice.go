@@ -11,19 +11,21 @@ import (
 
 // Invoice is the base object for sending and receiving invoices to Twikey
 type Invoice struct {
-	Id         string          `json:"id,omitempty"`
-	Number     string          `json:"number"`
-	Title      string          `json:"title"`
-	Remittance string          `json:"remittance"`
-	Ct         int             `json:"ct,omitempty"`
-	State      string          `json:"state,omitempty"`
-	Amount     float64         `json:"amount"`
-	Date       string          `json:"date"`
-	Duedate    string          `json:"duedate"`
-	Ref        string          `json:"ref,omitempty"`
-	Customer   Customer        `json:"customer"`
-	Pdf        []byte          `json:"pdf,omitempty"`
-	Meta       invoiceFeedMeta `json:"meta,omitempty"`
+	Id                 string           `json:"id,omitempty"`
+	Number             string           `json:"number"`
+	Title              string           `json:"title"`
+	Remittance         string           `json:"remittance"`
+	Ct                 int              `json:"ct,omitempty"`
+	Manual             bool             `json:"manual,omitempty"`
+	State              string           `json:"state,omitempty"`
+	Amount             float64          `json:"amount"`
+	Date               string           `json:"date"`
+	Duedate            string           `json:"duedate"`
+	Ref                string           `json:"ref,omitempty"`
+	CustomerByDocument string           `json:"customerByDocument,omitempty"`
+	Customer           *Customer        `json:"customer,omitempty"`
+	Pdf                []byte           `json:"pdf,omitempty"`
+	Meta               *InvoiceFeedMeta `json:"meta,omitempty"`
 }
 
 // Customer is a json wrapper for usage inside the Invoice object
@@ -52,7 +54,7 @@ func (inv *Invoice) IsPaid() bool {
 
 // HasMeta convenience method to indicate that there is extra info available on the invoice
 func (inv *Invoice) HasMeta() bool {
-	return inv.Meta != invoiceFeedMeta{}
+	return inv.Meta != nil
 }
 
 // IsFailed allows to distinguish invoices since they go from pending to booked or expired when payment failed
@@ -60,7 +62,7 @@ func (inv *Invoice) IsFailed() bool {
 	return inv.State == "BOOKED" || inv.State == "EXPIRED"
 }
 
-type invoiceFeedMeta struct {
+type InvoiceFeedMeta struct {
 	LastError string `json:"lastError,omitempty"`
 }
 
