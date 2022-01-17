@@ -85,13 +85,22 @@ func (c *Client) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
 }
 
 // PaylinkFeed retrieves the feed of updated paylinks since last call
-func (c *Client) PaylinkFeed(callback func(paylink Paylink)) error {
+func (c *Client) PaylinkFeed(callback func(paylink Paylink), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
-	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/payment/link/feed", nil)
+	url := c.BaseURL + "/creditor/payment/link/feed"
+	for i, sideload := range sideloads {
+		if i == 0 {
+			url = url + "?include=" + sideload
+		} else {
+			url = url + "&include=" + sideload
+		}
+	}
+
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)

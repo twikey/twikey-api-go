@@ -58,7 +58,7 @@ func TestTransactions(t *testing.T) {
 	t.Run("TransactionFeed", func(t *testing.T) {
 		err := c.TransactionFeed(func(transaction Transaction) {
 			t.Log("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
-		})
+		}, "meta")
 		if err != nil {
 			return
 		}

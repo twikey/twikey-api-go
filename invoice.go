@@ -143,13 +143,22 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 }
 
 //InvoiceFeed Get invoice Feed twikey
-func (c *Client) InvoiceFeed(callback func(invoice Invoice)) error {
+func (c *Client) InvoiceFeed(callback func(invoice Invoice), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
-	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/invoice?include=meta", nil)
+	url := c.BaseURL + "/creditor/invoice"
+	for i, sideload := range sideloads {
+		if i == 0 {
+			url = url + "?include=" + sideload
+		} else {
+			url = url + "&include=" + sideload
+		}
+	}
+
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("User-Agent", c.UserAgent)

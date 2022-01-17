@@ -85,14 +85,23 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
-func (c *Client) TransactionFeed(callback func(transaction Transaction)) error {
+func (c *Client) TransactionFeed(callback func(transaction Transaction), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
+	url := c.BaseURL + "/creditor/transaction"
+	for i, sideload := range sideloads {
+		if i == 0 {
+			url = url + "?include=" + sideload
+		} else {
+			url = url + "&include=" + sideload
+		}
+	}
+
 	for {
-		req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/transaction", nil)
+		req, _ := http.NewRequest("GET", url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
