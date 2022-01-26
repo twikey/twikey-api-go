@@ -80,7 +80,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice Invoice) (*Invoice, err
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
 	req.WithContext(ctx)
-	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -107,7 +107,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice Invoice) (*Invoice, err
 }
 
 // InvoiceFromUbl sends an invoice to Twikey in UBL format
-func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string) (*Invoice, error) {
+func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string, noAutoCollection bool) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -120,6 +120,9 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-Ref", ref)
+	if noAutoCollection {
+		req.Header.Set("X-MANUAL", "true")
+	}
 
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode == 200 {
