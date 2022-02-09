@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // TransactionRequest is the payload to be send to Twikey when a new transaction should be send
@@ -20,7 +21,7 @@ type TransactionRequest struct {
 	Amount                        float64
 	Place                         string
 	ReferenceIsEndToEndIdentifier bool
-	Reservation                   bool
+	Reservation                   string // via reservation request
 	Force                         bool
 }
 
@@ -39,6 +40,14 @@ type Transaction struct {
 	BookedError         string  `json:"bkerror"`
 	BookedAmount        float64 `json:"bkamount"`
 	RequestedCollection string  `json:"reqcolldt"`
+}
+
+// Reservation is the response from Twikey when updates are received
+type Reservation struct {
+	Id             string    `json:"id"`
+	MndtId         string    `json:"mndtId"`
+	ReservedAmount float64   `json:"reservedAmount"`
+	Expires        time.Time `json:"expires"`
 }
 
 // TransactionList is a struct to contain the response coming from Twikey, should be considered internal
@@ -60,9 +69,6 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 	if transaction.Force {
 		params.Add("force", "true")
 	}
-	if transaction.Reservation {
-		params.Add("reservation", "true")
-	}
 	if transaction.ReferenceIsEndToEndIdentifier {
 		params.Add("refase2e", "true")
 	}
@@ -70,18 +76,38 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 	c.debug("New transaction", params)
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
-	var err error
-	if transaction.Reservation {
-		err = c.sendRequest(req, nil)
-		return nil, err
-	} else {
-		var transactionList TransactionList
-		err = c.sendRequest(req, transactionList)
-		if err != nil {
-			return nil, err
-		}
-		return &transactionList.Entries[0], nil
+	if transaction.Reservation != "" {
+		req.Header.Add("X-RESERVATION", transaction.Reservation)
 	}
+	var transactionList TransactionList
+	err := c.sendRequest(req, transactionList)
+	if err != nil {
+		return nil, err
+	}
+	return &transactionList.Entries[0], nil
+}
+
+// ReservationNew sends a new reservation to Twikey
+func (c *Client) ReservationNew(transaction TransactionRequest) (*Reservation, error) {
+
+	params := url.Values{}
+	params.Add("mndtId", transaction.DocumentReference)
+	params.Add("date", transaction.TransactionDate)
+	params.Add("reqcolldt", transaction.RequestedCollection)
+	params.Add("amount", fmt.Sprintf("%.2f", transaction.Amount))
+	params.Add("message", transaction.Msg)
+	params.Add("ref", transaction.Ref)
+	params.Add("place", transaction.Place)
+	if transaction.Force {
+		params.Add("force", "true")
+	}
+
+	c.debug("New reservation", params)
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
+	var reservation *Reservation
+	err := c.sendRequest(req, reservation)
+	return reservation, err
+
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
@@ -91,17 +117,17 @@ func (c *Client) TransactionFeed(callback func(transaction Transaction), sideloa
 		return err
 	}
 
-	url := c.BaseURL + "/creditor/transaction"
+	_url := c.BaseURL + "/creditor/transaction"
 	for i, sideload := range sideloads {
 		if i == 0 {
-			url = url + "?include=" + sideload
+			_url = _url + "?include=" + sideload
 		} else {
-			url = url + "&include=" + sideload
+			_url = _url + "&include=" + sideload
 		}
 	}
 
 	for {
-		req, _ := http.NewRequest("GET", url, nil)
+		req, _ := http.NewRequest("GET", _url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
