@@ -24,7 +24,7 @@ func TestTransactions(t *testing.T) {
 	t.Run("New Transaction without valid mandate", func(t *testing.T) {
 		tx, err := c.TransactionNew(TransactionRequest{
 			DocumentReference: "ABC",
-			Msg:               "My Transaction",
+			Msg:               "No valid mandate",
 			Ref:               "My Reference",
 			Amount:            10.90,
 		})
@@ -38,8 +38,12 @@ func TestTransactions(t *testing.T) {
 	})
 
 	t.Run("New reservation with valid mandate ", func(t *testing.T) {
+		if os.Getenv("MNDTNUMBER") == "" {
+			t.Skip("No MNDTNUMBER available")
+		}
+
 		tx, err := c.ReservationNew(TransactionRequest{
-			DocumentReference: getEnv("MNDTNUMBER", "ABC"),
+			DocumentReference: os.Getenv("MNDTNUMBER"),
 			Msg:               "My Transaction",
 			Ref:               "My Reference",
 			Amount:            10.90,
@@ -49,8 +53,8 @@ func TestTransactions(t *testing.T) {
 			if err.Error() != "No contract was found" && err.Error() != "Not authorised" {
 				t.Fatal(err)
 			}
-		} else if tx != nil {
-			t.Fatal(tx)
+		} else if tx == nil {
+			t.Fatal("No reservation was done")
 		}
 	})
 

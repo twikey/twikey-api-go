@@ -83,7 +83,7 @@ func TestDocumentDetail(t *testing.T) {
 
 	mndt, err := c.DocumentDetail(os.Getenv("MNDTNUMBER"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(err, os.Getenv("MNDTNUMBER"))
 	}
 
 	if mndt == nil {
