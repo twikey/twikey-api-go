@@ -189,7 +189,7 @@ func (c *Client) DocumentUpdate(request UpdateRequest) error {
 
 	params := url.Values{}
 	if request.MandateNumber == "" {
-		return errors.New("A mndtId is required")
+		return NewTwikeyError("A mndtId is required")
 	}
 
 	params.Add("mndtId", request.MandateNumber)
@@ -289,7 +289,7 @@ func (c *Client) DocumentFeed(
 				return nil
 			}
 		} else {
-			return errors.New(res.Status)
+			return NewTwikeyErrorFromResponse(res)
 		}
 	}
 }
@@ -321,7 +321,7 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 		return err
 	}
 	fmt.Println("Unable to download file:", absPath)
-	return errors.New(res.Status)
+	return NewTwikeyErrorFromResponse(res)
 }
 
 // DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited
@@ -352,6 +352,5 @@ func (c *Client) DocumentDetail(mndtId string) (*Mndt, error) {
 
 		return &mndt.Mndt, nil
 	}
-	errcode := res.Header["Apierror"][0]
-	return nil, errors.New(errcode)
+	return nil, NewTwikeyErrorFromResponse(res)
 }

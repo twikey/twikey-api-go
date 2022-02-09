@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 )
@@ -100,10 +99,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice Invoice) (*Invoice, err
 		return &invoice, nil
 	}
 
-	errcode := res.Header["Apierror"][0]
 	errLoad, _ := ioutil.ReadAll(res.Body)
 	c.error("ERROR sending ubl invoice to Twikey: ", string(errLoad))
-	return nil, errors.New(errcode)
+	return nil, NewTwikeyErrorFromResponse(res)
 }
 
 // InvoiceFromUbl sends an invoice to Twikey in UBL format
@@ -139,10 +137,9 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 		return &invoice, nil
 	}
 
-	errcode := res.Header["Apierror"][0]
 	errLoad, _ := ioutil.ReadAll(res.Body)
 	c.error("ERROR sending ubl invoice to Twikey: ", string(errLoad))
-	return nil, errors.New(errcode)
+	return nil, NewTwikeyErrorFromResponse(res)
 }
 
 //InvoiceFeed Get invoice Feed twikey

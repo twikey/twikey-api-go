@@ -6,8 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -85,6 +83,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
+		c.error("Error while connecting", err)
 		return err
 	}
 
@@ -95,9 +94,9 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		var errRes errorResponse
 		if err = json.NewDecoder(res.Body).Decode(&errRes); err == nil {
-			return errors.New(errRes.Message)
+			return NewTwikeyError(errRes.Message)
 		}
-		return fmt.Errorf("Unknown error, status code: %d", res.StatusCode)
+		return NewTwikeyErrorFromResponse(res)
 	}
 
 	if v == nil {
@@ -105,7 +104,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&v); err != nil {
-		return err
+		return NewTwikeyError(err.Error())
 	}
 
 	return nil
@@ -123,7 +122,7 @@ func (c *Client) VerifyWebhook(signatureHeader string, payload string) error {
 	if signatureHeader == expectedHash {
 		return nil
 	}
-	return errors.New("Invalid value")
+	return NewTwikeyError("Invalid value")
 }
 
 func addIfExists(params url.Values, paramKey string, value string) {

@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -74,12 +73,16 @@ func (c *Client) refreshTokenIfRequired() error {
 				c.apiToken = token[0]
 				c.lastLogin = time.Now()
 				return nil
+			} else if resp.StatusCode > 500 {
+				c.error("General error", resp.StatusCode, resp.Status)
+				err = NewTwikeyErrorFromResponse(resp)
 			} else if resp.StatusCode > 200 {
-				err = errors.New(resp.Status)
+				c.error("Other error", resp.StatusCode, resp.Status)
+				err = NewTwikeyError(resp.Status)
 			} else if resp.Header["Apierrorcode"][0] == "403" {
 				errcode := resp.Header["Apierrorcode"][0]
 				c.error("Invalid apiToken status =", errcode)
-				err = errors.New("Invalid apiToken")
+				err = NewTwikeyError("Invalid apiToken")
 			}
 		}
 		c.apiToken = ""

@@ -2,7 +2,6 @@ package twikey
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -91,16 +90,16 @@ func (c *Client) PaylinkFeed(callback func(paylink Paylink), sideloads ...string
 		return err
 	}
 
-	url := c.BaseURL + "/creditor/payment/link/feed"
+	_url := c.BaseURL + "/creditor/payment/link/feed"
 	for i, sideload := range sideloads {
 		if i == 0 {
-			url = url + "?include=" + sideload
+			_url = _url + "?include=" + sideload
 		} else {
-			url = url + "&include=" + sideload
+			_url = _url + "&include=" + sideload
 		}
 	}
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", _url, nil)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -122,5 +121,5 @@ func (c *Client) PaylinkFeed(callback func(paylink Paylink), sideloads ...string
 		return nil
 	}
 	c.error("Invalid response from Twikey: ", res.StatusCode)
-	return errors.New(res.Status)
+	return NewTwikeyErrorFromResponse(res)
 }

@@ -2,7 +2,6 @@ package twikey
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -98,13 +97,14 @@ func (c *Client) ReservationNew(transaction TransactionRequest) (*Reservation, e
 	params.Add("message", transaction.Msg)
 	params.Add("ref", transaction.Ref)
 	params.Add("place", transaction.Place)
+	params.Add("reservation", "true")
 	if transaction.Force {
 		params.Add("force", "true")
 	}
 
 	c.debug("New reservation", params)
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
-	var reservation *Reservation
+	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
 
@@ -152,7 +152,7 @@ func (c *Client) TransactionFeed(callback func(transaction Transaction), sideloa
 			}
 		} else {
 			c.error("Invalid response from Twikey: ", res.StatusCode)
-			return errors.New(res.Status)
+			return NewTwikeyErrorFromResponse(res)
 		}
 	}
 }
