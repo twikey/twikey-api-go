@@ -72,6 +72,7 @@ var twikeyClient = &twikey.TwikeyClient{
 
 Invite a customer to sign a SEPA mandate using a specific behaviour template (ct) that allows you to configure
 the behaviour or flow that the customer will experience. This 'ct' can be found in the template section of the settings.
+The extra can be used to pass in extra attributes linked to the mandate.
 
 ```go
 invite, err := twikeyClient.DocumentInvite(InviteRequest{
@@ -85,7 +86,7 @@ invite, err := twikeyClient.DocumentInvite(InviteRequest{
    city:           "Liverpool",
    zip:            "1526",
    country:        "BE",
-})
+}, nil)
 if err != nil {
     t.Fatal(err)
 }
@@ -95,6 +96,8 @@ fmt.println(invite.Url)
 _After creation, the link available in invite.Url can be used to redirect the customer into the signing flow or even
 send him a link through any other mechanism. Ideally you store the mandatenumber for future usage (eg. sending transactions)._
 
+The DocumentSign function has a similar syntax only that it requires a method and is mosly used for interactive sessions 
+where no screens are involved. See [the documentation](https://api.twikey.com) for more info.
 
 ### Feed
 

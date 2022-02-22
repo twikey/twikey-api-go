@@ -49,6 +49,36 @@ func TestDocumentFeed(t *testing.T) {
 		t.Error("No valid invite retrieved")
 	}
 
+	mandateimport, err := c.DocumentSign(InviteRequest{
+		Template:       getEnv("CT", "1"),
+		CustomerNumber: "123",
+		Amount:         "123.10",
+		Email:          "john@doe.com",
+		Firstname:      "John",
+		Lastname:       "Doe",
+		Language:       "en",
+		Address:        "Abbey road",
+		City:           "Liverpool",
+		Zip:            "1526",
+		Country:        "BE",
+		Mobile:         "",
+		CompanyName:    "",
+		Coc:            "",
+		Iban:           "BE09363107700857",
+		MandateNumber:  "",
+		ContractNumber: "",
+		Method:         "import",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if mandateimport == nil {
+		t.Error("No valid import")
+	} else {
+		t.Log(mandateimport)
+	}
+
 	t.Run("DocumentFeed", func(t *testing.T) {
 		err := c.DocumentFeed(func(new Mndt) {
 			t.Log("new", new.MndtId)

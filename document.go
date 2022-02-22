@@ -35,6 +35,40 @@ type InviteRequest struct {
 	Iban           string
 	Bic            string
 	Campaign       string
+	Method         string
+	extra          map[string]string
+}
+
+func (request *InviteRequest) asUrlParams() string {
+	params := url.Values{}
+	params.Add("ct", request.Template)
+	params.Add("customerNumber", request.CustomerNumber)
+	params.Add("email", request.Email)
+	params.Add("mobile", request.Mobile)
+	params.Add("l", request.Language)
+	params.Add("lastname", request.Lastname)
+	params.Add("firstname", request.Firstname)
+	params.Add("mandateNumber", request.MandateNumber)
+	params.Add("contractNumber", request.ContractNumber)
+	params.Add("companyName", request.CompanyName)
+	params.Add("coc", request.Coc)
+	params.Add("address", request.Address)
+	params.Add("city", request.City)
+	params.Add("zip", request.Zip)
+	params.Add("country", request.Country)
+	params.Add("overrideFromDate", request.SignDate)
+	params.Add("amount", request.Amount)
+	params.Add("iban", request.Iban)
+	params.Add("bic", request.Bic)
+	params.Add("campaign", request.Campaign)
+	params.Add("method", request.Method)
+
+	if request.extra != nil {
+		for k, v := range request.extra {
+			params.Add(k, v)
+		}
+	}
+	return params.Encode()
 }
 
 // Invite is the response containing the documentNumber, key and the url to point the customer too.
@@ -148,31 +182,31 @@ func (c *Client) DocumentInvite(request InviteRequest) (*Invite, error) {
 	if request.Template == "" {
 		return nil, errors.New("A template is required")
 	}
-	params := url.Values{}
-	params.Add("ct", request.Template)
-	params.Add("customerNumber", request.CustomerNumber)
-	params.Add("email", request.Email)
-	params.Add("mobile", request.Mobile)
-	params.Add("l", request.Language)
-	params.Add("lastname", request.Lastname)
-	params.Add("firstname", request.Firstname)
-	params.Add("mandateNumber", request.MandateNumber)
-	params.Add("contractNumber", request.ContractNumber)
-	params.Add("companyName", request.CompanyName)
-	params.Add("coc", request.Coc)
-	params.Add("address", request.Address)
-	params.Add("city", request.City)
-	params.Add("zip", request.Zip)
-	params.Add("country", request.Country)
-	params.Add("overrideFromDate", request.SignDate)
-	params.Add("amount", request.Amount)
-	params.Add("iban", request.Iban)
-	params.Add("bic", request.Bic)
-	params.Add("campaign", request.Campaign)
 
-	c.debug("New document", params.Encode())
+	params := request.asUrlParams()
+	c.debug("New document", params)
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invite", strings.NewReader(params))
+	var invite Invite
+	if err := c.sendRequest(req, &invite); err != nil {
+		return nil, err
+	}
+	return &invite, nil
+}
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invite", strings.NewReader(params.Encode()))
+// DocumentInvite allows to invite a customer to sign a specific document
+func (c *Client) DocumentSign(request InviteRequest) (*Invite, error) {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return nil, err
+	}
+
+	if request.Template == "" {
+		return nil, errors.New("A template is required")
+	}
+
+	params := request.asUrlParams()
+	c.debug("New document", params)
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/sign", strings.NewReader(params))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err
