@@ -283,9 +283,9 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many
 func (c *Client) DocumentFeed(
-	newDocument func(mandate Mndt),
-	updateDocument func(mandate Mndt, reason AmdmntRsn),
-	cancelledDocument func(mandate string, reason CxlRsn)) error {
+	newDocument func(mandate *Mndt),
+	updateDocument func(mandate *Mndt, reason *AmdmntRsn),
+	cancelledDocument func(mandate string, reason *CxlRsn)) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -311,11 +311,11 @@ func (c *Client) DocumentFeed(
 			c.debug(fmt.Sprintf("Fetched %d documents", len(updates.Messages)))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
-					cancelledDocument(update.OrgnlMndtId, *update.CxlRsn)
+					cancelledDocument(update.OrgnlMndtId, update.CxlRsn)
 				} else if update.AmdmntRsn != nil {
-					updateDocument(*update.Mndt, *update.AmdmntRsn)
+					updateDocument(update.Mndt, update.AmdmntRsn)
 				} else {
-					newDocument(*update.Mndt)
+					newDocument(update.Mndt)
 				}
 			}
 

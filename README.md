@@ -21,7 +21,7 @@ payment options of your favorite PSP to allow other customers to pay as well.
 To use the Twikey API client, the following things are required:
 
 + Get yourself a [Twikey account](https://www.twikey.com).
-+ Go >= 1.0
++ Go >= 1.6
 + Up-to-date OpenSSL (or other SSL/TLS toolkit)
 
 ## Installation ##
@@ -75,7 +75,7 @@ the behaviour or flow that the customer will experience. This 'ct' can be found 
 The extra can be used to pass in extra attributes linked to the mandate.
 
 ```go
-invite, err := twikeyClient.DocumentInvite(InviteRequest{
+invite, err := twikeyClient.DocumentInvite(&InviteRequest{
    ct:             yourct,
    customerNumber: "123",
    email:          "john@doe.com",
@@ -105,11 +105,11 @@ Once signed, a webhook is sent (see below) after which you can fetch the detail 
 think of as reading out a queue. Since it'll return you the changes since the last time you called it.
 
 ```go
-err := twikeyClient.DocumentFeed(func(new Mndt) {
+err := twikeyClient.DocumentFeed(func(new *Mndt) {
     fmt.println("new", new.MndtId)
-}, func(update Mndt, reason AmdmntRsn) {
+}, func(update *Mndt, reason *AmdmntRsn) {
     fmt.println("update", update.MndtId, reason.Rsn)
-}, func(mandate string, reason CxlRsn) {
+}, func(mandate string, reason *CxlRsn) {
     fmt.println("cancelled", mandate, reason.Rsn)
 })
 ```
@@ -119,7 +119,7 @@ err := twikeyClient.DocumentFeed(func(new Mndt) {
 Send new transactions and act upon feedback from the bank.
 
 ```go
-tx, err := twikeyClient.TransactionNew(TransactionRequest{
+tx, err := twikeyClient.TransactionNew(&TransactionRequest{
    DocumentReference: "ABC",
    Msg:               "My Transaction",
    Ref:               "My Reference",
@@ -131,7 +131,7 @@ fmt.println("New tx", tx)
 ### Feed
 
 ```go
-err := twikeyClient.TransactionFeed(func(transaction Transaction) {
+err := twikeyClient.TransactionFeed(func(transaction *Transaction) {
     fmt.println("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
 })
 ```
