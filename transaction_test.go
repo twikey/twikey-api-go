@@ -22,7 +22,7 @@ func TestTransactions(t *testing.T) {
 	}
 
 	t.Run("New Transaction without valid mandate", func(t *testing.T) {
-		tx, err := c.TransactionNew(TransactionRequest{
+		tx, err := c.TransactionNew(&TransactionRequest{
 			DocumentReference: "ABC",
 			Msg:               "No valid mandate",
 			Ref:               "My Reference",
@@ -42,7 +42,7 @@ func TestTransactions(t *testing.T) {
 			t.Skip("No MNDTNUMBER available")
 		}
 
-		tx, err := c.ReservationNew(TransactionRequest{
+		tx, err := c.ReservationNew(&TransactionRequest{
 			DocumentReference: os.Getenv("MNDTNUMBER"),
 			Msg:               "My Transaction",
 			Ref:               "My Reference",
@@ -59,7 +59,7 @@ func TestTransactions(t *testing.T) {
 	})
 
 	t.Run("TransactionFeed", func(t *testing.T) {
-		err := c.TransactionFeed(func(transaction Transaction) {
+		err := c.TransactionFeed(func(transaction *Transaction) {
 			t.Log("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
 		}, "meta")
 		if err != nil {

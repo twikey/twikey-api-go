@@ -45,7 +45,7 @@ type Paylink struct {
 }
 
 // PaylinkNew sends the new paylink to Twikey for creation
-func (c *Client) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
+func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
 	params := url.Values{}
 	addIfExists(params, "ct", paylinkRequest.Template)
@@ -84,7 +84,7 @@ func (c *Client) PaylinkNew(paylinkRequest PaylinkRequest) (*Paylink, error) {
 }
 
 // PaylinkFeed retrieves the feed of updated paylinks since last call
-func (c *Client) PaylinkFeed(callback func(paylink Paylink), sideloads ...string) error {
+func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -113,7 +113,7 @@ func (c *Client) PaylinkFeed(callback func(paylink Paylink), sideloads ...string
 		if err == nil {
 			for len(paylinks) != 0 {
 				for _, paylink := range paylinks {
-					callback(paylink)
+					callback(&paylink)
 				}
 			}
 		}

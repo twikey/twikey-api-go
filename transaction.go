@@ -55,7 +55,7 @@ type TransactionList struct {
 }
 
 // TransactionNew sends a new transaction to Twikey
-func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, error) {
+func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, error) {
 
 	params := url.Values{}
 	params.Add("mndtId", transaction.DocumentReference)
@@ -87,7 +87,7 @@ func (c *Client) TransactionNew(transaction TransactionRequest) (*Transaction, e
 }
 
 // ReservationNew sends a new reservation to Twikey
-func (c *Client) ReservationNew(transaction TransactionRequest) (*Reservation, error) {
+func (c *Client) ReservationNew(transaction *TransactionRequest) (*Reservation, error) {
 
 	params := url.Values{}
 	params.Add("mndtId", transaction.DocumentReference)
@@ -111,7 +111,7 @@ func (c *Client) ReservationNew(transaction TransactionRequest) (*Reservation, e
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
-func (c *Client) TransactionFeed(callback func(transaction Transaction), sideloads ...string) error {
+func (c *Client) TransactionFeed(callback func(transaction *Transaction), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -143,7 +143,7 @@ func (c *Client) TransactionFeed(callback func(transaction Transaction), sideloa
 				c.debug(fmt.Sprintf("Fetched %d transactions", len(paymentResponse.Entries)))
 				if len(paymentResponse.Entries) != 0 {
 					for _, transaction := range paymentResponse.Entries {
-						callback(transaction)
+						callback(&transaction)
 					}
 				}
 			}

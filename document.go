@@ -173,7 +173,7 @@ type MandateUpdates struct {
 }
 
 // DocumentInvite allows to invite a customer to sign a specific document
-func (c *Client) DocumentInvite(request InviteRequest) (*Invite, error) {
+func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (c *Client) DocumentInvite(request InviteRequest) (*Invite, error) {
 }
 
 // DocumentInvite allows to invite a customer to sign a specific document
-func (c *Client) DocumentSign(request InviteRequest) (*Invite, error) {
+func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (c *Client) DocumentSign(request InviteRequest) (*Invite, error) {
 }
 
 // DocumentUpdate allows to update a previously added document
-func (c *Client) DocumentUpdate(request UpdateRequest) error {
+func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err

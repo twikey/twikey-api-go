@@ -23,7 +23,7 @@ func TestInvoiceFeed(t *testing.T) {
 	}
 
 	t.Run("InvoiceFeed", func(t *testing.T) {
-		err := c.InvoiceFeed(func(invoice Invoice) {
+		err := c.InvoiceFeed(func(invoice *Invoice) {
 			t.Log("Invoice", invoice.Number, invoice.State)
 		})
 		if err != nil {
@@ -47,7 +47,7 @@ func TestInvoiceAdd(t *testing.T) {
 	}
 
 	t.Run("Invoice", func(t *testing.T) {
-		invoice, err := c.InvoiceAdd(context.Background(), Invoice{
+		invoice, err := c.InvoiceAdd(context.Background(), &Invoice{
 			Number:     "123",
 			Title:      "TestInvoice 123",
 			Date:       "2021-01-01",

@@ -66,7 +66,7 @@ type InvoiceFeedMeta struct {
 }
 
 // InvoiceFromUbl sends an invoice to Twikey in UBL format
-func (c *Client) InvoiceAdd(ctx context.Context, invoice Invoice) (*Invoice, error) {
+func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 }
 
 //InvoiceFeed Get invoice Feed twikey
-func (c *Client) InvoiceFeed(callback func(invoice Invoice), sideloads ...string) error {
+func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -172,7 +172,7 @@ func (c *Client) InvoiceFeed(callback func(invoice Invoice), sideloads ...string
 		}
 
 		for _, invoice := range feeds.Invoices {
-			callback(invoice)
+			callback(&invoice)
 		}
 
 		moreInvoices = len(feeds.Invoices) >= 100

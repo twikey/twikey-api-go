@@ -21,7 +21,7 @@ func TestDocumentFeed(t *testing.T) {
 		},
 	}
 
-	invite, err := c.DocumentInvite(InviteRequest{
+	invite, err := c.DocumentInvite(&InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
 		Amount:         "123.10",
@@ -49,7 +49,7 @@ func TestDocumentFeed(t *testing.T) {
 		t.Error("No valid invite retrieved")
 	}
 
-	mandateimport, err := c.DocumentSign(InviteRequest{
+	mandateimport, err := c.DocumentSign(&InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
 		Amount:         "123.10",
