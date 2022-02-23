@@ -41,31 +41,74 @@ type InviteRequest struct {
 
 func (request *InviteRequest) asUrlParams() string {
 	params := url.Values{}
-	params.Add("ct", request.Template)
-	params.Add("customerNumber", request.CustomerNumber)
-	params.Add("email", request.Email)
-	params.Add("mobile", request.Mobile)
-	params.Add("l", request.Language)
-	params.Add("lastname", request.Lastname)
-	params.Add("firstname", request.Firstname)
-	params.Add("mandateNumber", request.MandateNumber)
-	params.Add("contractNumber", request.ContractNumber)
-	params.Add("companyName", request.CompanyName)
-	params.Add("coc", request.Coc)
-	params.Add("address", request.Address)
-	params.Add("city", request.City)
-	params.Add("zip", request.Zip)
-	params.Add("country", request.Country)
-	params.Add("overrideFromDate", request.SignDate)
-	params.Add("amount", request.Amount)
-	params.Add("iban", request.Iban)
-	params.Add("bic", request.Bic)
-	params.Add("campaign", request.Campaign)
-	params.Add("method", request.Method)
-
+	if request.Template != "" {
+		params.Add("ct", request.Template)
+	}
+	if request.CustomerNumber != "" {
+		params.Add("customerNumber", request.CustomerNumber)
+	}
+	if request.Email != "" {
+		params.Add("email", request.Email)
+	}
+	if request.Mobile != "" {
+		params.Add("mobile", request.Mobile)
+	}
+	if request.Language != "" {
+		params.Add("l", request.Language)
+	}
+	if request.Lastname != "" {
+		params.Add("lastname", request.Lastname)
+	}
+	if request.Firstname != "" {
+		params.Add("firstname", request.Firstname)
+	}
+	if request.MandateNumber != "" {
+		params.Add("mandateNumber", request.MandateNumber)
+	}
+	if request.ContractNumber != "" {
+		params.Add("contractNumber", request.ContractNumber)
+	}
+	if request.CompanyName != "" {
+		params.Add("companyName", request.CompanyName)
+	}
+	if request.Coc != "" {
+		params.Add("coc", request.Coc)
+	}
+	if request.Address != "" {
+		params.Add("address", request.Address)
+	}
+	if request.City != "" {
+		params.Add("city", request.City)
+	}
+	if request.Zip != "" {
+		params.Add("zip", request.Zip)
+	}
+	if request.Country != "" {
+		params.Add("country", request.Country)
+	}
+	if request.SignDate != "" {
+		params.Add("overrideFromDate", request.SignDate)
+	}
+	if request.Amount != "" {
+		params.Add("amount", request.Amount)
+	}
+	if request.Iban != "" {
+		params.Add("iban", request.Iban)
+	}
+	if request.Bic != "" {
+		params.Add("bic", request.Bic)
+	}
+	if request.Campaign != "" {
+		params.Add("campaign", request.Campaign)
+	}
+	if request.Method != "" {
+		params.Add("method", request.Method)
+	}
 	if request.extra != nil {
 		for k, v := range request.extra {
-			params.Add(k, v)
+			if v != "" {
+				params.Add(k, v)
+			}
 		}
 	}
 	return params.Encode()
