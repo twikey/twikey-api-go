@@ -32,6 +32,11 @@ type PaylinkRequest struct {
 	Txref          string  //	References from existing transactions
 	Method         string  //	Circumvents the payment selection with PSP (bancontact/ideal/maestro/mastercard/visa/inghomepay/kbc/belfius)
 	Invoice        string  //	create payment link for specific invoice number
+	Extra          map[string]string
+}
+
+func (request *PaylinkRequest) Add(key string, value string) {
+	request.Extra[key] = value
 }
 
 // Paylink is the response receiving from Twikey upon a request
@@ -48,7 +53,6 @@ type Paylink struct {
 func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
 	params := url.Values{}
-	addIfExists(params, "ct", paylinkRequest.Template)
 	addIfExists(params, "ct", paylinkRequest.Template)
 	addIfExists(params, "title", paylinkRequest.Title)
 	addIfExists(params, "remittance", paylinkRequest.Remittance)

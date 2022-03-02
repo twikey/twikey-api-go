@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 // Invoice is the base object for sending and receiving invoices to Twikey
@@ -31,6 +32,8 @@ type Invoice struct {
 type Customer struct {
 	CustomerNumber string `json:"customerNumber,omitempty"`
 	Email          string `json:"email,omitempty"`
+	CompanyName    string `json:"companyName"`
+	Coc            string `json:"coc"`
 	FirstName      string `json:"firstName"`
 	LastName       string `json:"lastName"`
 	Address        string `json:"address"`
@@ -39,6 +42,22 @@ type Customer struct {
 	Country        string `json:"country"`
 	Language       string `json:"l"`
 	Mobile         string `json:"mobile,omitempty"`
+}
+
+func (c *Customer) asUrlParams() string {
+	params := url.Values{}
+	addIfExists(params, "email", c.Email)
+	addIfExists(params, "companyName", c.CompanyName)
+	addIfExists(params, "coc", c.Coc)
+	addIfExists(params, "firstname", c.FirstName)
+	addIfExists(params, "lastname", c.LastName)
+	addIfExists(params, "address", c.Address)
+	addIfExists(params, "city", c.City)
+	addIfExists(params, "zip", c.Zip)
+	addIfExists(params, "country", c.Country)
+	addIfExists(params, "l", c.Language)
+	addIfExists(params, "mobile", c.Mobile)
+	return params.Encode()
 }
 
 // InvoiceFeed is a struct to contain the response coming from Twikey, should be considered internal

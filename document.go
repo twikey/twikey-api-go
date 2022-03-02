@@ -36,82 +36,47 @@ type InviteRequest struct {
 	Bic            string
 	Campaign       string
 	Method         string
-	extra          map[string]string
+	Extra          map[string]string
 }
 
 func (request *InviteRequest) asUrlParams() string {
 	params := url.Values{}
-	if request.Template != "" {
-		params.Add("ct", request.Template)
-	}
-	if request.CustomerNumber != "" {
-		params.Add("customerNumber", request.CustomerNumber)
-	}
-	if request.Email != "" {
-		params.Add("email", request.Email)
-	}
-	if request.Mobile != "" {
-		params.Add("mobile", request.Mobile)
-	}
-	if request.Language != "" {
-		params.Add("l", request.Language)
-	}
-	if request.Lastname != "" {
-		params.Add("lastname", request.Lastname)
-	}
-	if request.Firstname != "" {
-		params.Add("firstname", request.Firstname)
-	}
-	if request.MandateNumber != "" {
-		params.Add("mandateNumber", request.MandateNumber)
-	}
-	if request.ContractNumber != "" {
-		params.Add("contractNumber", request.ContractNumber)
-	}
-	if request.CompanyName != "" {
-		params.Add("companyName", request.CompanyName)
-	}
-	if request.Coc != "" {
-		params.Add("coc", request.Coc)
-	}
-	if request.Address != "" {
-		params.Add("address", request.Address)
-	}
-	if request.City != "" {
-		params.Add("city", request.City)
-	}
-	if request.Zip != "" {
-		params.Add("zip", request.Zip)
-	}
-	if request.Country != "" {
-		params.Add("country", request.Country)
-	}
-	if request.SignDate != "" {
-		params.Add("overrideFromDate", request.SignDate)
-	}
-	if request.Amount != "" {
-		params.Add("amount", request.Amount)
-	}
-	if request.Iban != "" {
-		params.Add("iban", request.Iban)
-	}
-	if request.Bic != "" {
-		params.Add("bic", request.Bic)
-	}
-	if request.Campaign != "" {
-		params.Add("campaign", request.Campaign)
-	}
-	if request.Method != "" {
-		params.Add("method", request.Method)
-	}
-	if request.extra != nil {
-		for k, v := range request.extra {
+	addIfExists(params, "ct", request.Template)
+	addIfExists(params, "customerNumber", request.CustomerNumber)
+	addIfExists(params, "email", request.Email)
+	addIfExists(params, "mobile", request.Mobile)
+	addIfExists(params, "l", request.Language)
+	addIfExists(params, "lastname", request.Lastname)
+	addIfExists(params, "firstname", request.Firstname)
+	addIfExists(params, "mandateNumber", request.MandateNumber)
+	addIfExists(params, "contractNumber", request.ContractNumber)
+	addIfExists(params, "companyName", request.CompanyName)
+	addIfExists(params, "coc", request.Coc)
+
+	addIfExists(params, "address", request.Address)
+	addIfExists(params, "city", request.City)
+	addIfExists(params, "zip", request.Zip)
+	addIfExists(params, "country", request.Country)
+
+	addIfExists(params, "overrideFromDate", request.SignDate)
+	addIfExists(params, "amount", request.Amount)
+	addIfExists(params, "iban", request.Iban)
+	addIfExists(params, "bic", request.Bic)
+	addIfExists(params, "campaign", request.Campaign)
+	addIfExists(params, "method", request.Method)
+
+	if request.Extra != nil {
+		for k, v := range request.Extra {
 			if v != "" {
 				params.Add(k, v)
 			}
 		}
 	}
 	return params.Encode()
+}
+
+func (request *InviteRequest) Add(key string, value string) {
+	request.Extra[key] = value
 }
 
 // Invite is the response containing the documentNumber, key and the url to point the customer too.
@@ -139,6 +104,66 @@ type UpdateRequest struct {
 	City           string // City of debtor
 	Zip            string // Zipcode of debtor
 	Country        string // Country of debtor
+	Extra          map[string]string
+}
+
+func (request *UpdateRequest) asUrlParams() string {
+	params := url.Values{}
+	addIfExists(params, "customerNumber", request.CustomerNumber)
+	if request.CustomerNumber != "" {
+		params.Add("customerNumber", request.CustomerNumber)
+	}
+	if request.Email != "" {
+		params.Add("email", request.Email)
+	}
+	if request.Mobile != "" {
+		params.Add("mobile", request.Mobile)
+	}
+	if request.Language != "" {
+		params.Add("l", request.Language)
+	}
+	if request.Lastname != "" {
+		params.Add("lastname", request.Lastname)
+	}
+	if request.Firstname != "" {
+		params.Add("firstname", request.Firstname)
+	}
+	if request.MandateNumber != "" {
+		params.Add("mandateNumber", request.MandateNumber)
+	}
+	if request.CompanyName != "" {
+		params.Add("companyName", request.CompanyName)
+	}
+	if request.Address != "" {
+		params.Add("address", request.Address)
+	}
+	if request.City != "" {
+		params.Add("city", request.City)
+	}
+	if request.Zip != "" {
+		params.Add("zip", request.Zip)
+	}
+	if request.Country != "" {
+		params.Add("country", request.Country)
+	}
+	if request.Iban != "" {
+		params.Add("iban", request.Iban)
+	}
+	if request.Bic != "" {
+		params.Add("bic", request.Bic)
+	}
+	if request.Extra != nil {
+		for k, v := range request.Extra {
+			if v != "" {
+				params.Add(k, v)
+			}
+		}
+	}
+	return params.Encode()
+}
+
+func (request *UpdateRequest) Add(key string, value string) {
+	request.Extra[key] = value
 }
 
 // CtctDtls contains all contact details for a specific document
@@ -264,31 +289,13 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 		return err
 	}
 
-	params := url.Values{}
 	if request.MandateNumber == "" {
 		return NewTwikeyError("A mndtId is required")
 	}
 
-	params.Add("mndtId", request.MandateNumber)
-	params.Add("state", request.State)
-	params.Add("mobile", request.Mobile)
-	params.Add("iban", request.Iban)
-	params.Add("bic", request.Bic)
-	params.Add("email", request.Email)
-	params.Add("firstname", request.Firstname)
-	params.Add("lastname", request.Lastname)
-	params.Add("companyName", request.CompanyName)
-	params.Add("vatno", request.Vatno)
-	params.Add("customerNumber", request.CustomerNumber)
-	params.Add("l", request.Language)
-	params.Add("address", request.Address)
-	params.Add("city", request.City)
-	params.Add("zip", request.Zip)
-	params.Add("country", request.Country)
+	c.debug("Update document", request.MandateNumber, request.asUrlParams())
 
-	c.debug("Update document", request.MandateNumber, params)
-
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/mandate/update", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Add("Accept", "application/json")
