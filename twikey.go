@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -30,17 +31,16 @@ type Client struct {
 	PrivateKey string
 	Salt       string
 	UserAgent  string
-
 	HTTPClient HTTPClient
-
-	Debug *log.Logger
-
-	apiToken  string
-	lastLogin time.Time
+	Debug      *log.Logger
+	apiToken   string
+	lastLogin  time.Time
 }
 
 // NewClient is a convenience method to hit the ground running with the Twikey Rest API
 func NewClient(apiKey string) *Client {
+	logger := log.Default()
+	logger.SetOutput(ioutil.Discard)
 	return &Client{
 		BaseURL:   baseURLV1,
 		APIKey:    apiKey,
@@ -49,6 +49,7 @@ func NewClient(apiKey string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
+		Debug: logger,
 	}
 }
 
@@ -58,16 +59,12 @@ type errorResponse struct {
 	Extra   string `json:"extra"`
 }
 
-func (c *Client) debug(v ...interface{}) {
-	if c.Debug != nil {
-		c.Debug.Println(v...)
+// Ping Try the current credentials
+func (c *Client) Ping() error {
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return err
 	}
-}
-
-func (c *Client) error(v ...interface{}) {
-	if c.Debug != nil {
-		c.Debug.Fatal(v...)
-	}
+	return nil
 }
 
 func (c *Client) sendRequest(req *http.Request, v interface{}) error {
@@ -83,13 +80,11 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		c.error("Error while connecting", err)
+		c.Debug.Println("Error while connecting", err)
 		return err
 	}
 
 	defer res.Body.Close()
-	//body,_ := ioutil.ReadAll(res.Body)
-	//print(body)
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		var errRes errorResponse
@@ -114,7 +109,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 func (c *Client) VerifyWebhook(signatureHeader string, payload string) error {
 	hash := hmac.New(sha256.New, []byte(c.APIKey))
 	if _, err := hash.Write([]byte(payload)); err != nil {
-		c.error("Cannot compute the HMAC for request: ", err)
+		c.Debug.Println("Error cannot compute the HMAC for request: ", err)
 		return err
 	}
 

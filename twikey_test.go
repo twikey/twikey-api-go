@@ -1,8 +1,15 @@
 package twikey
 
 import (
+	"os"
 	"testing"
 )
+
+func newTestClient() *Client {
+	c := NewClient(os.Getenv("TWIKEY_API_KEY"))
+	c.BaseURL = getEnv("TWIKEY_URL", "https://api.beta.twikey.com")
+	return c
+}
 
 func TestTwikeyClient_verifyWebhook(t *testing.T) {
 	c := NewClient("1234")

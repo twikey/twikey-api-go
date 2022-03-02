@@ -3,7 +3,6 @@ package twikey
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -67,9 +66,7 @@ func (request *InviteRequest) asUrlParams() string {
 
 	if request.Extra != nil {
 		for k, v := range request.Extra {
-			if v != "" {
-				params.Add(k, v)
-			}
+			addIfExists(params, k, v)
 		}
 	}
 	return params.Encode()
@@ -89,6 +86,7 @@ type Invite struct {
 // UpdateRequest contains all possible parameters that can be send to update a document
 type UpdateRequest struct {
 	MandateNumber  string // Document or MandateNumber
+	ContractNumber string // ContractNumber
 	State          string // active or passive (activated or suspend mandate)
 	Mobile         string // Owner's mobile number
 	Iban           string // Debtor's IBAN
@@ -97,7 +95,7 @@ type UpdateRequest struct {
 	Firstname      string // Firstname of the debtor
 	Lastname       string // Lastname of the debtor
 	CompanyName    string // Company name on the mandate
-	Vatno          string // The enterprise number (can only be changed if companyName is changed)
+	Coc            string // The enterprise number (can only be changed if companyName is changed)
 	CustomerNumber string // The customer number (can be added, updated or used to move a mandate)
 	Language       string // language on the mandate (ISO 2 letters)
 	Address        string // Address (street + number)
@@ -110,53 +108,24 @@ type UpdateRequest struct {
 func (request *UpdateRequest) asUrlParams() string {
 	params := url.Values{}
 	addIfExists(params, "customerNumber", request.CustomerNumber)
-	if request.CustomerNumber != "" {
-		params.Add("customerNumber", request.CustomerNumber)
-	}
-	if request.Email != "" {
-		params.Add("email", request.Email)
-	}
-	if request.Mobile != "" {
-		params.Add("mobile", request.Mobile)
-	}
-	if request.Language != "" {
-		params.Add("l", request.Language)
-	}
-	if request.Lastname != "" {
-		params.Add("lastname", request.Lastname)
-	}
-	if request.Firstname != "" {
-		params.Add("firstname", request.Firstname)
-	}
-	if request.MandateNumber != "" {
-		params.Add("mandateNumber", request.MandateNumber)
-	}
-	if request.CompanyName != "" {
-		params.Add("companyName", request.CompanyName)
-	}
-	if request.Address != "" {
-		params.Add("address", request.Address)
-	}
-	if request.City != "" {
-		params.Add("city", request.City)
-	}
-	if request.Zip != "" {
-		params.Add("zip", request.Zip)
-	}
-	if request.Country != "" {
-		params.Add("country", request.Country)
-	}
-	if request.Iban != "" {
-		params.Add("iban", request.Iban)
-	}
-	if request.Bic != "" {
-		params.Add("bic", request.Bic)
-	}
+	addIfExists(params, "email", request.Email)
+	addIfExists(params, "mobile", request.Mobile)
+	addIfExists(params, "l", request.Language)
+	addIfExists(params, "lastname", request.Lastname)
+	addIfExists(params, "firstname", request.Firstname)
+	addIfExists(params, "mandateNumber", request.MandateNumber)
+	addIfExists(params, "contractNumber", request.ContractNumber)
+	addIfExists(params, "companyName", request.CompanyName)
+	addIfExists(params, "coc", request.Coc)
+	addIfExists(params, "address", request.Address)
+	addIfExists(params, "city", request.City)
+	addIfExists(params, "zip", request.Zip)
+	addIfExists(params, "country", request.Country)
+	addIfExists(params, "iban", request.Iban)
+	addIfExists(params, "bic", request.Bic)
 	if request.Extra != nil {
 		for k, v := range request.Extra {
-			if v != "" {
-				params.Add(k, v)
-			}
+			addIfExists(params, k, v)
 		}
 	}
 	return params.Encode()
@@ -252,7 +221,7 @@ func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 	}
 
 	params := request.asUrlParams()
-	c.debug("New document", params)
+	c.Debug.Println("New document", params)
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invite", strings.NewReader(params))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
@@ -261,7 +230,7 @@ func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 	return &invite, nil
 }
 
-// DocumentInvite allows to invite a customer to sign a specific document
+// DocumentSign allows a customer to sign directly a specific document
 func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
@@ -273,7 +242,7 @@ func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 	}
 
 	params := request.asUrlParams()
-	c.debug("New document", params)
+	c.Debug.Println("New sign document", params)
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/sign", strings.NewReader(params))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
@@ -293,7 +262,7 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 		return NewTwikeyError("A mndtId is required")
 	}
 
-	c.debug("Update document", request.MandateNumber, request.asUrlParams())
+	c.Debug.Println("Update document", request.MandateNumber, request.asUrlParams())
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -319,7 +288,7 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 	params.Add("mndtId", mandate)
 	params.Add("rsn", reason)
 
-	c.debug("Cancelled document", mandate, reason)
+	c.Debug.Println("Cancelled document", mandate, reason)
 
 	req, _ := http.NewRequest("DELETE", c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -357,8 +326,8 @@ func (c *Client) DocumentFeed(
 				return err
 			}
 
-			defer res.Body.Close()
-			c.debug(fmt.Sprintf("Fetched %d documents", len(updates.Messages)))
+			res.Body.Close()
+			c.Debug.Printf("Fetched %d documents\n", len(updates.Messages))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
 					cancelledDocument(update.OrgnlMndtId, update.CxlRsn)
@@ -398,13 +367,13 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 		defer f.Close()
 		_, err := f.Write(payload)
 		if err != nil {
-			fmt.Println("Unable to download file:", absPath, err)
+			c.Debug.Println("Unable to download file:", absPath, err)
 		} else {
-			fmt.Println("Saving to file:", absPath)
+			c.Debug.Println("Saving to file:", absPath)
 		}
 		return err
 	}
-	fmt.Println("Unable to download file:", absPath)
+	c.Debug.Println("Unable to download file:", absPath)
 	return NewTwikeyErrorFromResponse(res)
 }
 

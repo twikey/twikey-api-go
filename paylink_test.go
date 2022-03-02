@@ -1,10 +1,8 @@
 package twikey
 
 import (
-	"net/http"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestPaylinkFeed(t *testing.T) {
@@ -12,15 +10,7 @@ func TestPaylinkFeed(t *testing.T) {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
 
-	c := Client{
-		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		APIKey:  os.Getenv("TWIKEY_API_KEY"),
-		//Debug: log.Default(),
-		HTTPClient: &http.Client{
-			Timeout: time.Minute,
-		},
-	}
-
+	c := newTestClient()
 	paylink, err := c.PaylinkNew(&PaylinkRequest{
 		Title:          "Test Message",
 		Remittance:     "12345679810",

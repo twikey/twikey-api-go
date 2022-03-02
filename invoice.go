@@ -106,9 +106,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
-		c.debug("TwikeyInvoice: ", string(payload))
+		c.Debug.Println("TwikeyInvoice: ", string(payload))
 		if res.Header["X-Warning"] != nil {
-			c.error("Warning for", invoice.Number, res.Header["X-Warning"])
+			c.Debug.Println("Warning for", invoice.Number, res.Header["X-Warning"])
 		}
 		var invoice Invoice
 		err := json.Unmarshal(payload, &invoice)
@@ -119,7 +119,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 	}
 
 	errLoad, _ := ioutil.ReadAll(res.Body)
-	c.error("ERROR sending ubl invoice to Twikey: ", string(errLoad))
+	c.Debug.Println("Error sending ubl invoice to Twikey: ", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 
@@ -144,9 +144,9 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
-		c.debug("TwikeyInvoice: ", string(payload))
+		c.Debug.Println("TwikeyInvoice: ", string(payload))
 		if res.Header["X-Warning"] != nil {
-			c.error("Warning for", ref, res.Header["X-Warning"])
+			c.Debug.Println("Warning for", ref, res.Header["X-Warning"])
 		}
 		var invoice Invoice
 		err := json.Unmarshal(payload, &invoice)
@@ -157,7 +157,7 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 	}
 
 	errLoad, _ := ioutil.ReadAll(res.Body)
-	c.error("ERROR sending ubl invoice to Twikey: ", string(errLoad))
+	c.Debug.Println("Error sending ubl invoice to Twikey: ", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 
@@ -168,16 +168,16 @@ func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...strin
 		return err
 	}
 
-	url := c.BaseURL + "/creditor/invoice"
+	_url := c.BaseURL + "/creditor/invoice"
 	for i, sideload := range sideloads {
 		if i == 0 {
-			url = url + "?include=" + sideload
+			_url = _url + "?include=" + sideload
 		} else {
-			url = url + "&include=" + sideload
+			_url = _url + "&include=" + sideload
 		}
 	}
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", _url, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("User-Agent", c.UserAgent)

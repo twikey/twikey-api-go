@@ -75,8 +75,13 @@ func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 	addIfExists(params, "city", paylinkRequest.City)
 	addIfExists(params, "zip", paylinkRequest.Zip)
 	addIfExists(params, "country", paylinkRequest.Country)
+	if paylinkRequest.Extra != nil {
+		for k, v := range paylinkRequest.Extra {
+			addIfExists(params, k, v)
+		}
+	}
 
-	c.debug("New link", params.Encode())
+	c.Debug.Println("New link", params.Encode())
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
 	var paylink Paylink
@@ -124,6 +129,6 @@ func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...strin
 		_ = res.Body.Close()
 		return nil
 	}
-	c.error("Invalid response from Twikey: ", res.StatusCode)
+	c.Debug.Println("Error invalid response from Twikey: ", res.StatusCode)
 	return NewTwikeyErrorFromResponse(res)
 }

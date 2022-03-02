@@ -1,10 +1,8 @@
 package twikey
 
 import (
-	"net/http"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestTransactions(t *testing.T) {
@@ -12,15 +10,7 @@ func TestTransactions(t *testing.T) {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
 
-	c := Client{
-		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		APIKey:  os.Getenv("TWIKEY_API_KEY"),
-		//Debug: log.Default(),
-		HTTPClient: &http.Client{
-			Timeout: time.Minute,
-		},
-	}
-
+	c := newTestClient()
 	t.Run("New Transaction without valid mandate", func(t *testing.T) {
 		tx, err := c.TransactionNew(&TransactionRequest{
 			DocumentReference: "ABC",

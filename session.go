@@ -59,7 +59,7 @@ func (c *Client) refreshTokenIfRequired() error {
 		params.Add("otp", fmt.Sprint(otp))
 	}
 
-	c.debug("Connecting to", c.BaseURL, " with ", c.APIKey)
+	c.Debug.Println("Connecting to", c.BaseURL, " with ", c.APIKey)
 
 	req, err := http.NewRequest("POST", c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
 	if err == nil {
@@ -69,19 +69,18 @@ func (c *Client) refreshTokenIfRequired() error {
 		if err == nil {
 			token := resp.Header["Authorization"]
 			if resp.StatusCode == 200 && token != nil {
-				c.debug("Connected to", c.BaseURL, "with token", token[0])
+				c.Debug.Println("Connected to", c.BaseURL, "with token", token[0])
 				c.apiToken = token[0]
 				c.lastLogin = time.Now()
 				return nil
 			} else if resp.StatusCode > 500 {
-				c.error("General error", resp.StatusCode, resp.Status)
+				c.Debug.Println("General error", resp.StatusCode, resp.Status)
 				err = NewTwikeyErrorFromResponse(resp)
 			} else if resp.StatusCode > 200 {
-				c.error("Other error", resp.StatusCode, resp.Status)
+				c.Debug.Println("Other error", resp.StatusCode, resp.Status)
 				err = NewTwikeyError(resp.Status)
-			} else if resp.Header["Apierrorcode"][0] == "403" {
-				errcode := resp.Header["Apierrorcode"][0]
-				c.error("Invalid apiToken status =", errcode)
+			} else if errcode := resp.Header["Apierror"]; errcode != nil {
+				c.Debug.Println("Error invalid apiToken status =", errcode[0])
 				err = NewTwikeyError("Invalid apiToken")
 			}
 		}
@@ -89,7 +88,7 @@ func (c *Client) refreshTokenIfRequired() error {
 		c.lastLogin = time.Unix(0, 0)
 		return err
 	}
-	c.error("Not connected :", err)
+	c.Debug.Println("Error while connecting :", err)
 	return err
 }
 
@@ -101,6 +100,6 @@ func (c *Client) logout() {
 
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode != 200 {
-		c.error("Invalid logout from Twikey:", res.StatusCode)
+		c.Debug.Println("Error in logout from Twikey:", res.StatusCode)
 	}
 }

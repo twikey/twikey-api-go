@@ -72,7 +72,7 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 		params.Add("refase2e", "true")
 	}
 
-	c.debug("New transaction", params)
+	c.Debug.Println("New transaction", params)
 
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
 	if transaction.Reservation != "" {
@@ -102,7 +102,7 @@ func (c *Client) ReservationNew(transaction *TransactionRequest) (*Reservation, 
 		params.Add("force", "true")
 	}
 
-	c.debug("New reservation", params)
+	c.Debug.Println("New reservation", params)
 	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
@@ -140,7 +140,7 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 			var paymentResponse TransactionList
 			err := json.Unmarshal(payload, &paymentResponse)
 			if err == nil {
-				c.debug(fmt.Sprintf("Fetched %d transactions", len(paymentResponse.Entries)))
+				c.Debug.Printf("Fetched %d transactions\n", len(paymentResponse.Entries))
 				if len(paymentResponse.Entries) != 0 {
 					for _, transaction := range paymentResponse.Entries {
 						callback(&transaction)
@@ -151,7 +151,7 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 				return nil
 			}
 		} else {
-			c.error("Invalid response from Twikey: ", res.StatusCode)
+			c.Debug.Println("Error response from Twikey: ", res.StatusCode)
 			return NewTwikeyErrorFromResponse(res)
 		}
 	}

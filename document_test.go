@@ -1,10 +1,8 @@
 package twikey
 
 import (
-	"net/http"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestDocumentFeed(t *testing.T) {
@@ -12,15 +10,7 @@ func TestDocumentFeed(t *testing.T) {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
 
-	c := Client{
-		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		APIKey:  os.Getenv("TWIKEY_API_KEY"),
-		//Debug:   log.Default(),
-		HTTPClient: &http.Client{
-			Timeout: time.Minute,
-		},
-	}
-
+	c := newTestClient()
 	invite, err := c.DocumentInvite(&InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
@@ -102,15 +92,7 @@ func TestDocumentDetail(t *testing.T) {
 		t.Skip("No MNDTNUMBER available")
 	}
 
-	c := Client{
-		BaseURL: getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
-		APIKey:  os.Getenv("TWIKEY_API_KEY"),
-		//Debug:   log.Default(),
-		HTTPClient: &http.Client{
-			Timeout: time.Minute,
-		},
-	}
-
+	c := newTestClient()
 	mndt, err := c.DocumentDetail(os.Getenv("MNDTNUMBER"))
 	if err != nil {
 		t.Fatal(err, os.Getenv("MNDTNUMBER"))

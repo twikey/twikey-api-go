@@ -16,7 +16,7 @@ func (c *Client) CustomerUpdate(request *Customer) error {
 	}
 
 	params := request.asUrlParams()
-	c.debug("Update customer", params)
+	c.Debug.Println("Update customer", params)
 
 	req, _ := http.NewRequest("PATCH", c.BaseURL+"/customer/"+request.CustomerNumber+"?"+params, nil)
 	if err := c.sendRequest(req, nil); err != nil {
