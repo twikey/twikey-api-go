@@ -98,7 +98,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 		return nil
 	}
 
-	if err = json.NewDecoder(res.Body).Decode(&v); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(v); err != nil {
 		return NewTwikeyError(err.Error())
 	}
 

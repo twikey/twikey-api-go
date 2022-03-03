@@ -79,7 +79,7 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 		req.Header.Add("X-RESERVATION", transaction.Reservation)
 	}
 	var transactionList TransactionList
-	err := c.sendRequest(req, transactionList)
+	err := c.sendRequest(req, &transactionList)
 	if err != nil {
 		return nil, err
 	}

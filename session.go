@@ -59,7 +59,7 @@ func (c *Client) refreshTokenIfRequired() error {
 		params.Add("otp", fmt.Sprint(otp))
 	}
 
-	c.Debug.Println("Connecting to", c.BaseURL, " with ", c.APIKey)
+	c.Debug.Println("Connecting to", c.BaseURL, "with", c.APIKey)
 
 	req, err := http.NewRequest("POST", c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
 	if err == nil {
