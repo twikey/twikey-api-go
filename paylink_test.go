@@ -30,10 +30,10 @@ func TestPaylinkFeed(t *testing.T) {
 
 	t.Run("PaylinkFeed", func(t *testing.T) {
 		err := c.PaylinkFeed(func(paylink *Paylink) {
-			t.Log("Paylink", paylink.Amount, paylink.Msg, paylink.State)
+			t.Logf("Paylink update #%d %.2f Euro with new state=%s", paylink.Id, paylink.Amount, paylink.State)
 		})
 		if err != nil {
-			return
+			t.Error(err)
 		}
 	})
 }

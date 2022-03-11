@@ -135,17 +135,17 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 		res, _ := c.HTTPClient.Do(req)
 
 		if res.StatusCode == 200 {
-			_ = res.Body.Close()
 			payload, _ := ioutil.ReadAll(res.Body)
+			_ = res.Body.Close()
 			var paymentResponse TransactionList
 			err := json.Unmarshal(payload, &paymentResponse)
 			if err == nil {
 				c.Debug.Printf("Fetched %d transactions\n", len(paymentResponse.Entries))
-				if len(paymentResponse.Entries) != 0 {
-					for _, transaction := range paymentResponse.Entries {
-						callback(&transaction)
-					}
+				for _, transaction := range paymentResponse.Entries {
+					callback(&transaction)
 				}
+			} else {
+				return err
 			}
 			if len(paymentResponse.Entries) == 0 {
 				return nil

@@ -105,12 +105,12 @@ Once signed, a webhook is sent (see below) after which you can fetch the detail 
 think of as reading out a queue. Since it'll return you the changes since the last time you called it.
 
 ```go
-err := twikeyClient.DocumentFeed(func(new *Mndt) {
-    fmt.println("new", new.MndtId)
-}, func(update *Mndt, reason *AmdmntRsn) {
-    fmt.println("update", update.MndtId, reason.Rsn)
-}, func(mandate string, reason *CxlRsn) {
-    fmt.println("cancelled", mandate, reason.Rsn)
+err := c.DocumentFeed(func(mandate *Mndt, eventTime string) {
+    fmt.println("Document created   ", mandate.MndtId, " @ ", eventTime)
+}, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string) {
+    fmt.println("Document updated   ", originalMandateNumber, reason.Rsn, " @ ", eventTime)
+}, func(mandateNumber string, reason *CxlRsn, eventTime string) {
+    fmt.println("Document cancelled ", mandateNumber, reason.Rsn, " @ ", eventTime)
 })
 ```
 

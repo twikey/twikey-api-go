@@ -49,6 +49,10 @@ type Paylink struct {
 	Url    string  `json:"url,omitempty"`
 }
 
+type PaylinkList struct {
+	Links []Paylink
+}
+
 // PaylinkNew sends the new paylink to Twikey for creation
 func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
@@ -108,27 +112,33 @@ func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...strin
 		}
 	}
 
-	req, _ := http.NewRequest("GET", _url, nil)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Authorization", c.apiToken)
-	req.Header.Set("User-Agent", c.UserAgent)
+	for {
+		req, _ := http.NewRequest("GET", _url, nil)
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Authorization", c.apiToken)
+		req.Header.Set("User-Agent", c.UserAgent)
 
-	res, _ := c.HTTPClient.Do(req)
+		res, _ := c.HTTPClient.Do(req)
 
-	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
-		var paylinks []Paylink
-		err := json.Unmarshal(payload, &paylinks)
-		if err == nil {
-			for len(paylinks) != 0 {
-				for _, paylink := range paylinks {
+		if res.StatusCode == 200 {
+			payload, _ := ioutil.ReadAll(res.Body)
+			_ = res.Body.Close()
+			var paylinks PaylinkList
+			err := json.Unmarshal(payload, &paylinks)
+			if err == nil {
+				c.Debug.Printf("Fetched %d links\n", len(paylinks.Links))
+				for _, paylink := range paylinks.Links {
 					callback(&paylink)
 				}
+			} else {
+				return err
 			}
+			if len(paylinks.Links) == 0 {
+				return nil
+			}
+		} else {
+			c.Debug.Println("Error response from Twikey: ", res.StatusCode)
+			return NewTwikeyErrorFromResponse(res)
 		}
-		_ = res.Body.Close()
-		return nil
 	}
-	c.Debug.Println("Error invalid response from Twikey: ", res.StatusCode)
-	return NewTwikeyErrorFromResponse(res)
 }

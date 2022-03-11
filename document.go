@@ -259,7 +259,7 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 	}
 
 	if request.MandateNumber == "" {
-		return NewTwikeyError("A mndtId is required")
+		return NewTwikeyError("err_invalid_mandatenumber", "A mndtId is required", "")
 	}
 
 	c.Debug.Println("Update document", request.MandateNumber, request.asUrlParams())
@@ -302,9 +302,9 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many
 func (c *Client) DocumentFeed(
-	newDocument func(mandate *Mndt),
-	updateDocument func(mandate *Mndt, reason *AmdmntRsn),
-	cancelledDocument func(mandate string, reason *CxlRsn)) error {
+	newDocument func(mandate *Mndt, eventTime string),
+	updateDocument func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string),
+	cancelledDocument func(mandateNumber string, reason *CxlRsn, eventTime string)) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -330,11 +330,11 @@ func (c *Client) DocumentFeed(
 			c.Debug.Printf("Fetched %d documents\n", len(updates.Messages))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
-					cancelledDocument(update.OrgnlMndtId, update.CxlRsn)
+					cancelledDocument(update.OrgnlMndtId, update.CxlRsn, update.EvtTime)
 				} else if update.AmdmntRsn != nil {
-					updateDocument(update.Mndt, update.AmdmntRsn)
+					updateDocument(update.OrgnlMndtId, update.Mndt, update.AmdmntRsn, update.EvtTime)
 				} else {
-					newDocument(update.Mndt)
+					newDocument(update.Mndt, update.EvtTime)
 				}
 			}
 

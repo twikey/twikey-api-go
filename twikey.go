@@ -84,12 +84,13 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 		return err
 	}
 
-	defer res.Body.Close()
+	payload, _ := ioutil.ReadAll(res.Body)
+	_ = res.Body.Close()
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		var errRes errorResponse
-		if err = json.NewDecoder(res.Body).Decode(&errRes); err == nil {
-			return NewTwikeyError(errRes.Message)
+		if err = json.Unmarshal(payload, &errRes); err == nil {
+			return NewTwikeyError(errRes.Code, errRes.Message, errRes.Extra)
 		}
 		return NewTwikeyErrorFromResponse(res)
 	}
@@ -98,8 +99,8 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 		return nil
 	}
 
-	if err = json.NewDecoder(res.Body).Decode(v); err != nil {
-		return NewTwikeyError(err.Error())
+	if err = json.Unmarshal(payload, v); err != nil {
+		return NewTwikeyError("system_error", err.Error(), "")
 	}
 
 	return nil
@@ -117,7 +118,7 @@ func (c *Client) VerifyWebhook(signatureHeader string, payload string) error {
 	if signatureHeader == expectedHash {
 		return nil
 	}
-	return NewTwikeyError("Invalid value")
+	return NewTwikeyError("invalid_params", "Invalid value", "")
 }
 
 func addIfExists(params url.Values, paramKey string, value string) {

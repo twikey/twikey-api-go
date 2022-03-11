@@ -2,6 +2,7 @@ package twikey
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -14,10 +15,26 @@ func TestInvoiceFeed(t *testing.T) {
 	c := newTestClient()
 	t.Run("InvoiceFeed", func(t *testing.T) {
 		err := c.InvoiceFeed(func(invoice *Invoice) {
-			t.Log("Invoice", invoice.Number, invoice.State)
-		})
+			newState := ""
+			if invoice.State == "PAID" {
+				lastPayment := (*invoice.LastPayment)[0]
+				via := ""
+				if lastPayment["method"] != nil {
+					via = fmt.Sprintf(" via %s", lastPayment["method"])
+				}
+				date := ""
+				if lastPayment["date"] != nil {
+					via = fmt.Sprintf(" on %s", lastPayment["date"])
+				}
+				newState = "PAID" + via + date
+			} else {
+				newState = "now has state " + invoice.State
+			}
+
+			t.Logf("Invoice update with number %s %.2f euro %s", invoice.Number, invoice.Amount, newState)
+		}, "lastpayment", "meta", "customer")
 		if err != nil {
-			return
+			t.Error(err)
 		}
 	})
 }

@@ -26,7 +26,10 @@ type Invoice struct {
 	Customer           *Customer        `json:"customer,omitempty"`
 	Pdf                []byte           `json:"pdf,omitempty"`
 	Meta               *InvoiceFeedMeta `json:"meta,omitempty"`
+	LastPayment        *Lastpayment     `json:"lastpayment,omitempty"`
 }
+
+type Lastpayment []map[string]interface{}
 
 // Customer is a json wrapper for usage inside the Invoice object
 type Customer struct {

@@ -50,7 +50,24 @@ func TestTransactions(t *testing.T) {
 
 	t.Run("TransactionFeed", func(t *testing.T) {
 		err := c.TransactionFeed(func(transaction *Transaction) {
-			t.Log("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
+			state := transaction.State
+			final := transaction.Final
+			ref := transaction.Ref
+			if ref == "" {
+				ref = transaction.Message
+			}
+			_state := state
+			_final := ""
+			if state == "PAID" {
+				_state = "is now paid"
+			} else if state == "ERROR" {
+				_state = "failed due to '" + transaction.BookedError + "'"
+			}
+			// final means Twikey has gone through all dunning steps, but customer still did not pay
+			if final {
+				_final = "with no more dunning steps"
+			}
+			t.Log("Transaction update", transaction.Amount, "euro with", ref, _state, _final)
 		}, "meta")
 		if err != nil {
 			return

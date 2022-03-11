@@ -3,8 +3,10 @@ package twikey
 import "net/http"
 
 type TwikeyError struct {
-	code    int
+	status  int
+	code    string
 	message string
+	extra   string
 }
 
 func (err *TwikeyError) Error() string {
@@ -12,13 +14,15 @@ func (err *TwikeyError) Error() string {
 }
 
 func (err *TwikeyError) IsUserError() bool {
-	return err.code == 400
+	return err.status == 400
 }
 
-func NewTwikeyError(msg string) *TwikeyError {
+func NewTwikeyError(code string, msg string, extra string) *TwikeyError {
 	return &TwikeyError{
-		code:    400,
+		status:  400,
+		code:    code,
 		message: msg,
+		extra:   extra,
 	}
 }
 
@@ -26,16 +30,19 @@ func NewTwikeyErrorFromResponse(res *http.Response) *TwikeyError {
 	if res.StatusCode == 400 {
 		errcode := res.Header["Apierror"][0]
 		return &TwikeyError{
-			code:    res.StatusCode,
+			status:  res.StatusCode,
+			code:    errcode,
 			message: errcode,
 		}
 	}
 	return &TwikeyError{
-		code:    res.StatusCode,
+		status:  res.StatusCode,
+		code:    "system_error",
 		message: res.Status,
 	}
 }
 
 var SystemError error = &TwikeyError{
-	code: 500,
+	status: 500,
+	code:   "system_error",
 }

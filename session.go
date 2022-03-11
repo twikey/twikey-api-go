@@ -78,10 +78,10 @@ func (c *Client) refreshTokenIfRequired() error {
 				err = NewTwikeyErrorFromResponse(resp)
 			} else if resp.StatusCode > 200 {
 				c.Debug.Println("Other error", resp.StatusCode, resp.Status)
-				err = NewTwikeyError(resp.Status)
+				err = NewTwikeyErrorFromResponse(resp)
 			} else if errcode := resp.Header["Apierror"]; errcode != nil {
 				c.Debug.Println("Error invalid apiToken status =", errcode[0])
-				err = NewTwikeyError("Invalid apiToken")
+				err = NewTwikeyError(errcode[0], "Invalid apiToken", "")
 			}
 		}
 		c.apiToken = ""
