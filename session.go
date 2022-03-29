@@ -61,7 +61,7 @@ func (c *Client) refreshTokenIfRequired() error {
 
 	c.Debug.Println("Connecting to", c.BaseURL, "with", c.APIKey)
 
-	req, err := http.NewRequest("POST", c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
 	if err == nil {
 		req.Header.Set("User-Agent", c.UserAgent)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -93,7 +93,7 @@ func (c *Client) refreshTokenIfRequired() error {
 }
 
 func (c *Client) logout() {
-	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor", nil)
+	req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor", nil)
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken)

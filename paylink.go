@@ -87,7 +87,7 @@ func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
 	c.Debug.Println("New link", params.Encode())
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
 	var paylink Paylink
 	err := c.sendRequest(req, &paylink)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...strin
 	}
 
 	for {
-		req, _ := http.NewRequest("GET", _url, nil)
+		req, _ := http.NewRequest(http.MethodGet, _url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)

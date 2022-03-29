@@ -99,7 +99,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 		return nil, err
 	}
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
 	req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", c.apiToken) //Already there
@@ -133,7 +133,7 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 		return nil, err
 	}
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invoice/ubl", bytes.NewReader(ublBytes))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invoice/ubl", bytes.NewReader(ublBytes))
 	req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/xml")
 	req.Header.Set("Authorization", c.apiToken) //Already there
@@ -180,7 +180,7 @@ func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...strin
 		}
 	}
 
-	req, _ := http.NewRequest("GET", _url, nil)
+	req, _ := http.NewRequest(http.MethodGet, _url, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("User-Agent", c.UserAgent)

@@ -222,7 +222,7 @@ func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 
 	params := request.asUrlParams()
 	c.Debug.Println("New document", params)
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/invite", strings.NewReader(params))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invite", strings.NewReader(params))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 
 	params := request.asUrlParams()
 	c.Debug.Println("New sign document", params)
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/sign", strings.NewReader(params))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/sign", strings.NewReader(params))
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err
@@ -264,7 +264,7 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 
 	c.Debug.Println("Update document", request.MandateNumber, request.asUrlParams())
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Add("Accept", "application/json")
@@ -311,7 +311,7 @@ func (c *Client) DocumentFeed(
 	}
 
 	for {
-		req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/mandate", nil)
+		req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate", nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Authorization", c.apiToken)
 		req.Header.Set("Accept", "application/json")
@@ -352,7 +352,7 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
 
-	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/mandate/pdf?"+params.Encode(), nil)
+	req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate/pdf?"+params.Encode(), nil)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -387,7 +387,7 @@ func (c *Client) DocumentDetail(mndtId string) (*Mndt, error) {
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
 
-	req, _ := http.NewRequest("GET", c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
+	req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)

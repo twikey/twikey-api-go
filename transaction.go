@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -54,6 +55,11 @@ type TransactionList struct {
 	Entries []Transaction
 }
 
+// CollectResponse is a struct to contain the response coming from Twikey, should be considered internal
+type CollectResponse struct {
+	ID string `json:"rcurMsgId"`
+}
+
 // TransactionNew sends a new transaction to Twikey
 func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, error) {
 
@@ -74,7 +80,7 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 
 	c.Debug.Println("New transaction", params)
 
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
 	if transaction.Reservation != "" {
 		req.Header.Add("X-RESERVATION", transaction.Reservation)
 	}
@@ -103,7 +109,7 @@ func (c *Client) ReservationNew(transaction *TransactionRequest) (*Reservation, 
 	}
 
 	c.Debug.Println("New reservation", params)
-	req, _ := http.NewRequest("POST", c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
@@ -127,7 +133,7 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 	}
 
 	for {
-		req, _ := http.NewRequest("GET", _url, nil)
+		req, _ := http.NewRequest(http.MethodGet, _url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
@@ -154,5 +160,44 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 			c.Debug.Println("Error response from Twikey: ", res.StatusCode)
 			return NewTwikeyErrorFromResponse(res)
 		}
+	}
+}
+
+// TransactionCollect collects all open transaction
+func (c *Client) TransactionCollect(template string, prenotify bool) (string, error) {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return "", err
+	}
+
+	_url := c.BaseURL + "/creditor/collect"
+	if _, err := strconv.Atoi(template); err == nil {
+		_url = _url + "?ct=" + template
+	} else {
+		_url = _url + "?tc=" + template
+	}
+	if prenotify {
+		_url = _url + "&prenotify=true"
+	}
+	req, _ := http.NewRequest(http.MethodPost, _url, nil)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", c.apiToken)
+	req.Header.Set("User-Agent", c.UserAgent)
+	res, _ := c.HTTPClient.Do(req)
+
+	if res.StatusCode == 200 {
+		payload, _ := ioutil.ReadAll(res.Body)
+		_ = res.Body.Close()
+		var collectionResponse CollectResponse
+		err := json.Unmarshal(payload, &collectionResponse)
+		if err == nil && collectionResponse.ID != "" {
+			c.Debug.Printf("Collected transaction for %s into %s\n", template, collectionResponse.ID)
+			return collectionResponse.ID, nil
+		} else {
+			return "", err
+		}
+	} else {
+		c.Debug.Println("Error response from Twikey: ", res.StatusCode)
+		return "", NewTwikeyErrorFromResponse(res)
 	}
 }

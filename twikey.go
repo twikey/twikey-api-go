@@ -88,6 +88,10 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	_ = res.Body.Close()
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
+		if res.Header.Get("Apierror") == "err_no_login" {
+			c.Debug.Println("Error while using apitoken, renewing")
+			c.lastLogin = time.UnixMilli(0) // force re-authenticate
+		}
 		var errRes errorResponse
 		if err = json.Unmarshal(payload, &errRes); err == nil {
 			return NewTwikeyError(errRes.Code, errRes.Message, errRes.Extra)
