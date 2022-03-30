@@ -201,3 +201,40 @@ func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...strin
 	}
 	return nil
 }
+
+// InvoiceDetail allows a snapshot of a particular invoice, note that this is rate limited
+func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, sideloads ...string) (*Invoice, error) {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return nil, err
+	}
+
+	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber
+	for i, sideload := range sideloads {
+		if i == 0 {
+			_url = _url + "?include=" + sideload
+		} else {
+			_url = _url + "&include=" + sideload
+		}
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, _url, nil)
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	res, _ := c.HTTPClient.Do(req)
+	if res.StatusCode == 200 {
+		payload, _ := ioutil.ReadAll(res.Body)
+
+		var invoice Invoice
+		err := json.Unmarshal(payload, &invoice)
+		if err != nil {
+			return nil, err
+		}
+
+		return &invoice, nil
+	}
+	return nil, NewTwikeyErrorFromResponse(res)
+}
