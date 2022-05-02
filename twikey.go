@@ -23,18 +23,29 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+type TimeProvider interface {
+	Now() time.Time
+}
+
+type DefaultTimeProvider struct{}
+
+func (tp DefaultTimeProvider) Now() time.Time {
+	return time.Now()
+}
+
 // Client is the base class, please use a dedicated UserAgent so we can notify the emergency contact
 // if weird behaviour is perceived.
 type Client struct {
-	BaseURL    string
-	APIKey     string
-	PrivateKey string
-	Salt       string
-	UserAgent  string
-	HTTPClient HTTPClient
-	Debug      *log.Logger
-	apiToken   string
-	lastLogin  time.Time
+	BaseURL      string
+	APIKey       string
+	PrivateKey   string
+	Salt         string
+	UserAgent    string
+	HTTPClient   HTTPClient
+	Debug        *log.Logger
+	apiToken     string
+	lastLogin    time.Time
+	timeProvider TimeProvider
 }
 
 // NewClient is a convenience method to hit the ground running with the Twikey Rest API
@@ -49,7 +60,8 @@ func NewClient(apiKey string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		Debug: logger,
+		Debug:        logger,
+		timeProvider: DefaultTimeProvider{},
 	}
 }
 

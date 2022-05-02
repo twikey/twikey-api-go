@@ -66,7 +66,7 @@ func TestDocumentFeed(t *testing.T) {
 	if mandateimport == nil {
 		t.Error("No valid import")
 	} else {
-		t.Log(mandateimport)
+		t.Log("Imported", mandateimport.MndtId)
 	}
 
 	t.Run("DocumentFeed", func(t *testing.T) {
