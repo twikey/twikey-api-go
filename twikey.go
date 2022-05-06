@@ -90,6 +90,8 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", c.apiToken)
 
+	c.Debug.Println("Calling", req.Method, req.URL)
+
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		c.Debug.Println("Error while connecting", err)
@@ -98,6 +100,8 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 
 	payload, _ := ioutil.ReadAll(res.Body)
 	_ = res.Body.Close()
+
+	c.Debug.Println("Response for", req.Method, req.URL, "was", string(payload))
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		if res.Header.Get("Apierror") == "err_no_login" {
