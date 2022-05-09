@@ -73,14 +73,19 @@ func (inv *Invoice) IsPaid() bool {
 	return inv.State == "PAID"
 }
 
-// HasMeta convenience method to indicate that there is extra info available on the invoice
-func (inv *Invoice) HasMeta() bool {
-	return inv.Meta != nil
+// IsPending convenience method
+func (inv *Invoice) IsPending() bool {
+	return inv.State == "PENDING"
 }
 
 // IsFailed allows to distinguish invoices since they go from pending to booked or expired when payment failed
 func (inv *Invoice) IsFailed() bool {
 	return inv.State == "BOOKED" || inv.State == "EXPIRED"
+}
+
+// HasMeta convenience method to indicate that there is extra info available on the invoice
+func (inv *Invoice) HasMeta() bool {
+	return inv.Meta != nil
 }
 
 type InvoiceFeedMeta struct {
