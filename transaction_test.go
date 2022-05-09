@@ -32,10 +32,8 @@ func TestTransactions(t *testing.T) {
 			t.Skip("No MNDTNUMBER available")
 		}
 
-		tx, err := c.ReservationNew(&TransactionRequest{
+		tx, err := c.ReservationNew(&ReservationRequest{
 			DocumentReference: os.Getenv("MNDTNUMBER"),
-			Msg:               "My Transaction",
-			Ref:               "My Reference",
 			Amount:            10.90,
 			Force:             true, // allow second reservation
 		})

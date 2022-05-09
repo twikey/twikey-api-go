@@ -25,6 +25,15 @@ type TransactionRequest struct {
 	Force                         bool
 }
 
+// TransactionRequest is the payload to be send to Twikey when a new transaction should be send
+type ReservationRequest struct {
+	DocumentReference string
+	Amount            float64
+	Minimum           float64
+	Expiration        *time.Time
+	Force             bool
+}
+
 // Transaction is the response from Twikey when updates are received
 type Transaction struct {
 	Id                  int64   `json:"id,omitempty"`
@@ -93,27 +102,27 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 }
 
 // ReservationNew sends a new reservation to Twikey
-func (c *Client) ReservationNew(transaction *TransactionRequest) (*Reservation, error) {
+func (c *Client) ReservationNew(reservationRequest *ReservationRequest) (*Reservation, error) {
 
 	params := url.Values{}
-	params.Add("mndtId", transaction.DocumentReference)
-	params.Add("date", transaction.TransactionDate)
-	params.Add("reqcolldt", transaction.RequestedCollection)
-	params.Add("amount", fmt.Sprintf("%.2f", transaction.Amount))
-	params.Add("message", transaction.Msg)
-	params.Add("ref", transaction.Ref)
-	params.Add("place", transaction.Place)
+	params.Add("mndtId", reservationRequest.DocumentReference)
+	params.Add("message", "ignore")
+	params.Add("amount", fmt.Sprintf("%.2f", reservationRequest.Amount))
+	if reservationRequest.Minimum != 0 {
+		params.Add("reservationMinimum", fmt.Sprintf("%.2f", reservationRequest.Minimum))
+	}
+	if reservationRequest.Expiration != nil {
+		params.Add("reservationExpiration", reservationRequest.Expiration.UTC().Format(time.RFC3339))
+	}
 	params.Add("reservation", "true")
-	if transaction.Force {
+	if reservationRequest.Force {
 		params.Add("force", "true")
 	}
-
 	c.Debug.Println("New reservation", params)
 	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
-
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
