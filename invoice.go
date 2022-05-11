@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 // Invoice is the base object for sending and receiving invoices to Twikey
@@ -110,6 +111,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
+	if os.Getenv("TWIKEY_API_ID") != "" {
+		req.Header.Set("X-PARTNER", os.Getenv("TWIKEY_API_ID"))
+	}
 
 	res, _ := c.HTTPClient.Do(req)
 	if res.StatusCode == 200 {
@@ -127,7 +131,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 	}
 
 	errLoad, _ := ioutil.ReadAll(res.Body)
-	c.Debug.Println("Error sending ubl invoice to Twikey: ", string(errLoad))
+	c.Debug.Println("Error sending invoice to Twikey: ", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 
@@ -147,6 +151,9 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 	req.Header.Set("X-Ref", ref)
 	if noAutoCollection {
 		req.Header.Set("X-MANUAL", "true")
+	}
+	if os.Getenv("TWIKEY_API_ID") != "" {
+		req.Header.Set("X-PARTNER", os.Getenv("TWIKEY_API_ID"))
 	}
 
 	res, _ := c.HTTPClient.Do(req)
@@ -170,7 +177,7 @@ func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string
 }
 
 //InvoiceFeed Get invoice Feed twikey
-func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...string) error {
+func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -185,7 +192,7 @@ func (c *Client) InvoiceFeed(callback func(invoice *Invoice), sideloads ...strin
 		}
 	}
 
-	req, _ := http.NewRequest(http.MethodGet, _url, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken) //Already there
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -224,6 +231,7 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, si
 	}
 
 	req, _ := http.NewRequest(http.MethodGet, _url, nil)
+	req.WithContext(ctx)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)

@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"os"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestTransactions(t *testing.T) {
 
 	c := newTestClient()
 	t.Run("New Transaction without valid mandate", func(t *testing.T) {
-		tx, err := c.TransactionNew(&TransactionRequest{
+		tx, err := c.TransactionNew(context.Background(), &TransactionRequest{
 			DocumentReference: "ABC",
 			Msg:               "No valid mandate",
 			Ref:               "My Reference",
@@ -32,7 +33,7 @@ func TestTransactions(t *testing.T) {
 			t.Skip("No MNDTNUMBER available")
 		}
 
-		tx, err := c.ReservationNew(&ReservationRequest{
+		tx, err := c.ReservationNew(context.Background(), &ReservationRequest{
 			DocumentReference: os.Getenv("MNDTNUMBER"),
 			Amount:            10.90,
 			Force:             true, // allow second reservation
@@ -47,7 +48,7 @@ func TestTransactions(t *testing.T) {
 	})
 
 	t.Run("TransactionFeed", func(t *testing.T) {
-		err := c.TransactionFeed(func(transaction *Transaction) {
+		err := c.TransactionFeed(context.Background(), func(transaction *Transaction) {
 			state := transaction.State
 			final := transaction.Final
 			ref := transaction.Ref

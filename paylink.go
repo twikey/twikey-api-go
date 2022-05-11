@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -54,7 +55,7 @@ type PaylinkList struct {
 }
 
 // PaylinkNew sends the new paylink to Twikey for creation
-func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
+func (c *Client) PaylinkNew(ctx context.Context, paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
 	params := url.Values{}
 	addIfExists(params, "ct", paylinkRequest.Template)
@@ -87,7 +88,7 @@ func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 
 	c.Debug.Println("New link", params.Encode())
 
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
 	var paylink Paylink
 	err := c.sendRequest(req, &paylink)
 	if err != nil {
@@ -97,7 +98,7 @@ func (c *Client) PaylinkNew(paylinkRequest *PaylinkRequest) (*Paylink, error) {
 }
 
 // PaylinkFeed retrieves the feed of updated paylinks since last call
-func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...string) error {
+func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -113,7 +114,7 @@ func (c *Client) PaylinkFeed(callback func(paylink *Paylink), sideloads ...strin
 	}
 
 	for {
-		req, _ := http.NewRequest(http.MethodGet, _url, nil)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)

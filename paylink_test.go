@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"os"
 	"testing"
 )
@@ -11,7 +12,7 @@ func TestPaylinkFeed(t *testing.T) {
 	}
 
 	c := newTestClient()
-	paylink, err := c.PaylinkNew(&PaylinkRequest{
+	paylink, err := c.PaylinkNew(context.Background(), &PaylinkRequest{
 		Title:          "Test Message",
 		Remittance:     "12345679810",
 		Amount:         10.0,
@@ -29,7 +30,7 @@ func TestPaylinkFeed(t *testing.T) {
 	}
 
 	t.Run("PaylinkFeed", func(t *testing.T) {
-		err := c.PaylinkFeed(func(paylink *Paylink) {
+		err := c.PaylinkFeed(context.Background(), func(paylink *Paylink) {
 			t.Logf("Paylink update #%d %.2f Euro with new state=%s", paylink.Id, paylink.Amount, paylink.State)
 		})
 		if err != nil {

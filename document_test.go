@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"os"
 	"testing"
 )
@@ -11,7 +12,7 @@ func TestDocumentFeed(t *testing.T) {
 	}
 
 	c := newTestClient()
-	invite, err := c.DocumentInvite(&InviteRequest{
+	invite, err := c.DocumentInvite(context.Background(), &InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
 		Amount:         "123.10",
@@ -39,7 +40,7 @@ func TestDocumentFeed(t *testing.T) {
 		t.Error("No valid invite retrieved")
 	}
 
-	mandateimport, err := c.DocumentSign(&InviteRequest{
+	mandateimport, err := c.DocumentSign(context.Background(), &InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
 		Amount:         "123.10",
@@ -93,7 +94,7 @@ func TestDocumentDetail(t *testing.T) {
 	}
 
 	c := newTestClient()
-	mndt, err := c.DocumentDetail(os.Getenv("MNDTNUMBER"))
+	mndt, err := c.DocumentDetail(context.Background(), os.Getenv("MNDTNUMBER"))
 	if err != nil {
 		t.Fatal(err, os.Getenv("MNDTNUMBER"))
 	}

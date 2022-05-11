@@ -14,7 +14,7 @@ func TestInvoiceFeed(t *testing.T) {
 
 	c := newTestClient()
 	t.Run("InvoiceFeed", func(t *testing.T) {
-		err := c.InvoiceFeed(func(invoice *Invoice) {
+		err := c.InvoiceFeed(context.Background(), func(invoice *Invoice) {
 			newState := ""
 			if invoice.State == "PAID" {
 				lastPayment := (*invoice.LastPayment)[0]

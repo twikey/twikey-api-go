@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -70,7 +71,7 @@ type CollectResponse struct {
 }
 
 // TransactionNew sends a new transaction to Twikey
-func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, error) {
+func (c *Client) TransactionNew(ctx context.Context, transaction *TransactionRequest) (*Transaction, error) {
 
 	params := url.Values{}
 	params.Add("mndtId", transaction.DocumentReference)
@@ -89,7 +90,7 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 
 	c.Debug.Println("New transaction", params)
 
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
 	if transaction.Reservation != "" {
 		req.Header.Add("X-RESERVATION", transaction.Reservation)
 	}
@@ -102,7 +103,7 @@ func (c *Client) TransactionNew(transaction *TransactionRequest) (*Transaction, 
 }
 
 // ReservationNew sends a new reservation to Twikey
-func (c *Client) ReservationNew(reservationRequest *ReservationRequest) (*Reservation, error) {
+func (c *Client) ReservationNew(ctx context.Context, reservationRequest *ReservationRequest) (*Reservation, error) {
 
 	params := url.Values{}
 	params.Add("mndtId", reservationRequest.DocumentReference)
@@ -119,14 +120,14 @@ func (c *Client) ReservationNew(reservationRequest *ReservationRequest) (*Reserv
 		params.Add("force", "true")
 	}
 	c.Debug.Println("New reservation", params)
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
-func (c *Client) TransactionFeed(callback func(transaction *Transaction), sideloads ...string) error {
+func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction *Transaction), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -142,7 +143,7 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 	}
 
 	for {
-		req, _ := http.NewRequest(http.MethodGet, _url, nil)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
@@ -173,7 +174,7 @@ func (c *Client) TransactionFeed(callback func(transaction *Transaction), sidelo
 }
 
 // TransactionCollect collects all open transaction
-func (c *Client) TransactionCollect(template string, prenotify bool) (string, error) {
+func (c *Client) TransactionCollect(ctx context.Context, template string, prenotify bool) (string, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return "", err
@@ -188,7 +189,7 @@ func (c *Client) TransactionCollect(template string, prenotify bool) (string, er
 	if prenotify {
 		_url = _url + "&prenotify=true"
 	}
-	req, _ := http.NewRequest(http.MethodPost, _url, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, _url, nil)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)

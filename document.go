@@ -1,6 +1,7 @@
 package twikey
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -210,7 +211,7 @@ type MandateUpdates struct {
 }
 
 // DocumentInvite allows to invite a customer to sign a specific document
-func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
+func (c *Client) DocumentInvite(ctx context.Context, request *InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -222,7 +223,8 @@ func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 
 	params := request.asUrlParams()
 	c.Debug.Println("New document", params)
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invite", strings.NewReader(params))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/invite", strings.NewReader(params))
+
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err
@@ -231,7 +233,7 @@ func (c *Client) DocumentInvite(request *InviteRequest) (*Invite, error) {
 }
 
 // DocumentSign allows a customer to sign directly a specific document
-func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
+func (c *Client) DocumentSign(ctx context.Context, request *InviteRequest) (*Invite, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -243,7 +245,8 @@ func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 
 	params := request.asUrlParams()
 	c.Debug.Println("New sign document", params)
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/sign", strings.NewReader(params))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/sign", strings.NewReader(params))
+
 	var invite Invite
 	if err := c.sendRequest(req, &invite); err != nil {
 		return nil, err
@@ -252,7 +255,7 @@ func (c *Client) DocumentSign(request *InviteRequest) (*Invite, error) {
 }
 
 // DocumentUpdate allows to update a previously added document
-func (c *Client) DocumentUpdate(request *UpdateRequest) error {
+func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -264,7 +267,7 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 
 	c.Debug.Println("Update document", request.MandateNumber, request.asUrlParams())
 
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Add("Accept", "application/json")
@@ -278,7 +281,7 @@ func (c *Client) DocumentUpdate(request *UpdateRequest) error {
 }
 
 // DocumentCancel allows to cancel (or delete if unsigned) a previously added document
-func (c *Client) DocumentCancel(mandate string, reason string) error {
+func (c *Client) DocumentCancel(ctx context.Context, mandate string, reason string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -290,7 +293,7 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 
 	c.Debug.Println("Cancelled document", mandate, reason)
 
-	req, _ := http.NewRequest("DELETE", c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
+	req, _ := http.NewRequestWithContext(ctx, "DELETE", c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken)
 	req.Header.Set("Accept", "application/json")
@@ -302,6 +305,7 @@ func (c *Client) DocumentCancel(mandate string, reason string) error {
 
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many
 func (c *Client) DocumentFeed(
+	ctx context.Context,
 	newDocument func(mandate *Mndt, eventTime string),
 	updateDocument func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string),
 	cancelledDocument func(mandateNumber string, reason *CxlRsn, eventTime string)) error {
@@ -311,7 +315,7 @@ func (c *Client) DocumentFeed(
 	}
 
 	for {
-		req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate", nil)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/creditor/mandate", nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Authorization", c.apiToken)
 		req.Header.Set("Accept", "application/json")
@@ -348,11 +352,11 @@ func (c *Client) DocumentFeed(
 }
 
 // DownloadPdf allows the download of a specific (signed) pdf
-func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
+func (c *Client) DownloadPdf(ctx context.Context, mndtId string, downloadFile string) error {
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
 
-	req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate/pdf?"+params.Encode(), nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/creditor/mandate/pdf?"+params.Encode(), nil)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -378,7 +382,7 @@ func (c *Client) DownloadPdf(mndtId string, downloadFile string) error {
 }
 
 // DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited
-func (c *Client) DocumentDetail(mndtId string) (*Mndt, error) {
+func (c *Client) DocumentDetail(ctx context.Context, mndtId string) (*Mndt, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -387,7 +391,7 @@ func (c *Client) DocumentDetail(mndtId string) (*Mndt, error) {
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
 
-	req, _ := http.NewRequest(http.MethodGet, c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.UserAgent)

@@ -1,11 +1,12 @@
 package twikey
 
 import (
+	"context"
 	"errors"
 	"net/http"
 )
 
-func (c *Client) CustomerUpdate(request *Customer) error {
+func (c *Client) CustomerUpdate(ctx context.Context, request *Customer) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
@@ -18,7 +19,7 @@ func (c *Client) CustomerUpdate(request *Customer) error {
 	params := request.asUrlParams()
 	c.Debug.Println("Update customer", params)
 
-	req, _ := http.NewRequest("PATCH", c.BaseURL+"/customer/"+request.CustomerNumber+"?"+params, nil)
+	req, _ := http.NewRequestWithContext(ctx, "PATCH", c.BaseURL+"/customer/"+request.CustomerNumber+"?"+params, nil)
 	if err := c.sendRequest(req, nil); err != nil {
 		return err
 	}
