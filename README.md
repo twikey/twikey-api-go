@@ -75,7 +75,7 @@ the behaviour or flow that the customer will experience. This 'ct' can be found 
 The extra can be used to pass in extra attributes linked to the mandate.
 
 ```go
-invite, err := twikeyClient.DocumentInvite(&InviteRequest{
+invite, err := twikeyClient.DocumentInvite(context.Background(), &InviteRequest{
    ct:             yourct,
    customerNumber: "123",
    email:          "john@doe.com",
@@ -105,7 +105,7 @@ Once signed, a webhook is sent (see below) after which you can fetch the detail 
 think of as reading out a queue. Since it'll return you the changes since the last time you called it.
 
 ```go
-err := c.DocumentFeed(func(mandate *Mndt, eventTime string) {
+err := c.DocumentFeed(context.Background(), func(mandate *Mndt, eventTime string) {
     fmt.println("Document created   ", mandate.MndtId, " @ ", eventTime)
 }, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string) {
     fmt.println("Document updated   ", originalMandateNumber, reason.Rsn, " @ ", eventTime)
@@ -119,7 +119,7 @@ err := c.DocumentFeed(func(mandate *Mndt, eventTime string) {
 Send new transactions and act upon feedback from the bank.
 
 ```go
-tx, err := twikeyClient.TransactionNew(&TransactionRequest{
+tx, err := twikeyClient.TransactionNew(context.Background(), &TransactionRequest{
    DocumentReference: "ABC",
    Msg:               "My Transaction",
    Ref:               "My Reference",
@@ -131,7 +131,7 @@ fmt.println("New tx", tx)
 ### Feed
 
 ```go
-err := twikeyClient.TransactionFeed(func(transaction *Transaction) {
+err := twikeyClient.TransactionFeed(context.Background(), func(transaction *Transaction) {
     fmt.println("Transaction", transaction.Amount, transaction.BookedError, transaction.Final)
 })
 ```
