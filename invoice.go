@@ -4,10 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
+)
+
+type InvoiceAction int64
+
+const (
+	InvoiceAction_EMAIL    InvoiceAction = iota // Send invitation by email
+	InvoiceAction_SMS                           // Send invitation by sms
+	InvoiceAction_REMINDER                      // Send a reminder by email
+	InvoiceAction_LETTER                        // Send the invoice via postal letter
+	InvoiceAction_REOFFER                       // Reoffer (or try to collect the invoice via a recurring mechanism)
 )
 
 // Invoice is the base object for sending and receiving invoices to Twikey
@@ -250,4 +262,43 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, si
 		return &invoice, nil
 	}
 	return nil, NewTwikeyErrorFromResponse(res)
+}
+
+// InvoiceAction allows certain actions to be done on an existing invoice
+func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, action InvoiceAction) error {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return err
+	}
+
+	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber + "/action"
+	params := url.Values{}
+
+	switch action {
+	case InvoiceAction_EMAIL:
+		params.Add("type", "email")
+	case InvoiceAction_SMS:
+		params.Add("type", "sms")
+	case InvoiceAction_LETTER:
+		params.Add("type", "letter")
+	case InvoiceAction_REMINDER:
+		params.Add("type", "reminder")
+	case InvoiceAction_REOFFER:
+		params.Add("type", "reoffer")
+	default:
+		return errors.New("Invalid action")
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, _url, strings.NewReader(params.Encode()))
+	req.WithContext(ctx)
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	res, _ := c.HTTPClient.Do(req)
+	if res.StatusCode == 204 {
+		return nil
+	}
+	return NewTwikeyErrorFromResponse(res)
 }
