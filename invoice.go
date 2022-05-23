@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -43,6 +42,16 @@ type Invoice struct {
 }
 
 type Lastpayment []map[string]interface{}
+
+type NewInvoiceRequest struct {
+	Origin    string
+	Reference string
+	Purpose   string
+	Manual    bool // Don't automatically collect
+	Template  string
+	Invoice   *Invoice // either UBL
+	UblBytes  []byte   // or an invoice item
+}
 
 // Customer is a json wrapper for usage inside the Invoice object
 type Customer struct {
@@ -106,25 +115,63 @@ type InvoiceFeedMeta struct {
 }
 
 // InvoiceFromUbl sends an invoice to Twikey in UBL format
-func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, error) {
+func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceRequest) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
 	}
 
-	invoiceBytes, err := json.Marshal(invoice)
-	if err != nil {
-		return nil, err
-	}
-
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
-	req.WithContext(ctx)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", c.apiToken) //Already there
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent)
-	if os.Getenv("TWIKEY_API_ID") != "" {
-		req.Header.Set("X-PARTNER", os.Getenv("TWIKEY_API_ID"))
+	var req *http.Request
+	if invoiceRequest.Invoice != nil {
+		invoiceBytes, err := json.Marshal(invoiceRequest)
+		if err != nil {
+			return nil, err
+		}
+		req, _ = http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invoice", bytes.NewReader(invoiceBytes))
+		req.WithContext(ctx)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", c.apiToken) //Already there
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", c.UserAgent)
+		// req.Header.Set("X-Ref", invoiceRequest.Reference)  ref already in json
+		if invoiceRequest.Origin != "" {
+			req.Header.Set("X-PARTNER", invoiceRequest.Origin)
+		}
+		if invoiceRequest.Purpose != "" {
+			req.Header.Set("X-Purpose", invoiceRequest.Purpose)
+		}
+		if invoiceRequest.Manual {
+			req.Header.Set("X-MANUAL", "true")
+		}
+	} else if len(invoiceRequest.UblBytes) != 0 {
+		invoiceUrl := c.BaseURL + "/creditor/invoice/ubl"
+		req, _ = http.NewRequest(http.MethodPost, invoiceUrl, bytes.NewReader(invoiceRequest.UblBytes))
+		req.WithContext(ctx)
+		req.Header.Set("Content-Type", "application/xml")
+		req.Header.Set("Authorization", c.apiToken) //Already there
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", c.UserAgent)
+		if invoiceRequest.Template != "" {
+			req.Header.Set("X-Template", invoiceRequest.Template)
+		}
+		if invoiceRequest.Origin != "" {
+			req.Header.Set("X-Partner", invoiceRequest.Origin)
+		}
+		if invoiceRequest.Purpose != "" {
+			req.Header.Set("X-Purpose", invoiceRequest.Purpose)
+		}
+		if invoiceRequest.Manual {
+			req.Header.Set("X-Manual", "true")
+		}
+		if invoiceRequest.Reference != "" {
+			req.Header.Set("X-Ref", invoiceRequest.Reference)
+		}
+	} else {
+		return nil, &TwikeyError{
+			Status:  0,
+			Code:    "invalid_request",
+			Message: "Either ubl or invoice struct is required",
+		}
 	}
 
 	res, _ := c.HTTPClient.Do(req)
@@ -132,7 +179,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 		payload, _ := ioutil.ReadAll(res.Body)
 		c.Debug.Println("TwikeyInvoice: ", string(payload))
 		if res.Header["X-Warning"] != nil {
-			c.Debug.Println("Warning for", invoice.Number, res.Header["X-Warning"])
+			c.Debug.Println("Warning for new invoice with ref=", invoiceRequest.Reference, res.Header["X-Warning"])
 		}
 		var invoice Invoice
 		err := json.Unmarshal(payload, &invoice)
@@ -144,47 +191,6 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoice *Invoice) (*Invoice, er
 
 	errLoad, _ := ioutil.ReadAll(res.Body)
 	c.Debug.Println("Error sending invoice to Twikey: ", string(errLoad))
-	return nil, NewTwikeyErrorFromResponse(res)
-}
-
-// InvoiceFromUbl sends an invoice to Twikey in UBL format
-func (c *Client) InvoiceFromUbl(ctx context.Context, ublBytes []byte, ref string, noAutoCollection bool) (*Invoice, error) {
-
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return nil, err
-	}
-
-	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor/invoice/ubl", bytes.NewReader(ublBytes))
-	req.WithContext(ctx)
-	req.Header.Set("Content-Type", "application/xml")
-	req.Header.Set("Authorization", c.apiToken) //Already there
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent)
-	req.Header.Set("X-Ref", ref)
-	if noAutoCollection {
-		req.Header.Set("X-MANUAL", "true")
-	}
-	if os.Getenv("TWIKEY_API_ID") != "" {
-		req.Header.Set("X-PARTNER", os.Getenv("TWIKEY_API_ID"))
-	}
-
-	res, _ := c.HTTPClient.Do(req)
-	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
-		c.Debug.Println("TwikeyInvoice: ", string(payload))
-		if res.Header["X-Warning"] != nil {
-			c.Debug.Println("Warning for", ref, res.Header["X-Warning"])
-		}
-		var invoice Invoice
-		err := json.Unmarshal(payload, &invoice)
-		if err != nil {
-			return nil, err
-		}
-		return &invoice, nil
-	}
-
-	errLoad, _ := ioutil.ReadAll(res.Body)
-	c.Debug.Println("Error sending ubl invoice to Twikey: ", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 

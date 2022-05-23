@@ -46,22 +46,25 @@ func TestInvoiceAdd(t *testing.T) {
 
 	c := newTestClient()
 	t.Run("Invoice", func(t *testing.T) {
-		invoice, err := c.InvoiceAdd(context.Background(), &Invoice{
-			Number:     "123",
-			Title:      "TestInvoice 123",
-			Date:       "2021-01-01",
-			Duedate:    "2021-03-01",
-			Remittance: "123",
-			Amount:     10.00,
-			Customer: &Customer{
-				CustomerNumber: "123",
-				Email:          "support@twikey.com",
-				Address:        "Derbystraat 43",
-				City:           "Gent",
-				Zip:            "9051",
-				Country:        "BE",
-				Language:       "nl",
+		invoice, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
+			Invoice: &Invoice{
+				Number:     "123",
+				Title:      "TestInvoice 123",
+				Date:       "2021-01-01",
+				Duedate:    "2021-03-01",
+				Remittance: "123",
+				Amount:     10.00,
+				Customer: &Customer{
+					CustomerNumber: "123",
+					Email:          "support@twikey.com",
+					Address:        "Derbystraat 43",
+					City:           "Gent",
+					Zip:            "9051",
+					Country:        "BE",
+					Language:       "nl",
+				},
 			},
+			Origin: "Go-Test",
 		})
 		if err != nil {
 			t.Error(err)
