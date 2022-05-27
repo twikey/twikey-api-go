@@ -413,8 +413,8 @@ func (c *Client) DocumentDetail(ctx context.Context, mndtId string, force bool) 
 			return nil, err
 		}
 
-		mndt.State = res.Header["X-STATE"][0]
-		mndt.Collectable = res.Header["X-COLLECTABLE"][0] == "true"
+		mndt.State = res.Header.Get("X-STATE")
+		mndt.Collectable = res.Header.Get("X-COLLECTABLE") == "true"
 		return &mndt, nil
 	}
 	return nil, NewTwikeyErrorFromResponse(res)
