@@ -183,7 +183,9 @@ type Mndt struct {
 }
 
 type MndtDetail struct {
-	Mndt Mndt
+	State       string
+	Collectable bool
+	Mndt        Mndt
 }
 
 // AmdmntRsn contains the reason why something was updated
@@ -381,8 +383,9 @@ func (c *Client) DownloadPdf(ctx context.Context, mndtId string, downloadFile st
 	return NewTwikeyErrorFromResponse(res)
 }
 
-// DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited
-func (c *Client) DocumentDetail(ctx context.Context, mndtId string) (*Mndt, error) {
+// DocumentDetail allows a snapshot of a particular mandate, note that this is rate limited.
+// Force ignores the state of the mandate which is being returned
+func (c *Client) DocumentDetail(ctx context.Context, mndtId string, force bool) (*MndtDetail, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -390,6 +393,9 @@ func (c *Client) DocumentDetail(ctx context.Context, mndtId string) (*Mndt, erro
 
 	params := url.Values{}
 	params.Add("mndtId", mndtId)
+	if force {
+		params.Add("force", "1")
+	}
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/creditor/mandate/detail?"+params.Encode(), nil)
 	req.Header.Add("Accept-Language", "en")
@@ -407,7 +413,9 @@ func (c *Client) DocumentDetail(ctx context.Context, mndtId string) (*Mndt, erro
 			return nil, err
 		}
 
-		return &mndt.Mndt, nil
+		mndt.State = res.Header["X-STATE"][0]
+		mndt.Collectable = res.Header["X-COLLECTABLE"][0] == "true"
+		return &mndt, nil
 	}
 	return nil, NewTwikeyErrorFromResponse(res)
 }

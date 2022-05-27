@@ -94,7 +94,7 @@ func TestDocumentDetail(t *testing.T) {
 	}
 
 	c := newTestClient()
-	mndt, err := c.DocumentDetail(context.Background(), os.Getenv("MNDTNUMBER"))
+	mndt, err := c.DocumentDetail(context.Background(), os.Getenv("MNDTNUMBER"), false)
 	if err != nil {
 		t.Fatal(err, os.Getenv("MNDTNUMBER"))
 	}
@@ -102,6 +102,6 @@ func TestDocumentDetail(t *testing.T) {
 	if mndt == nil {
 		t.Error("No valid mandate retrieved")
 	} else {
-		t.Log("Got Mandate", mndt.MndtId)
+		t.Log("Got Mandate", mndt.Mndt.MndtId, "with state", mndt.State)
 	}
 }
