@@ -49,6 +49,7 @@ type NewInvoiceRequest struct {
 	Purpose   string
 	Manual    bool // Don't automatically collect
 	Template  string
+	Contract  string
 	Invoice   *Invoice // either UBL
 	UblBytes  []byte   // or an invoice item
 }
@@ -153,6 +154,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		req.Header.Set("User-Agent", c.UserAgent)
 		if invoiceRequest.Template != "" {
 			req.Header.Set("X-Template", invoiceRequest.Template)
+		}
+		if invoiceRequest.Contract != "" {
+			req.Header.Set("X-CONTRACT", invoiceRequest.Contract)
 		}
 		if invoiceRequest.Origin != "" {
 			req.Header.Set("X-Partner", invoiceRequest.Origin)
