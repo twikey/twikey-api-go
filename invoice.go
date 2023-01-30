@@ -44,14 +44,15 @@ type Invoice struct {
 type Lastpayment []map[string]interface{}
 
 type NewInvoiceRequest struct {
-	Origin    string
-	Reference string
-	Purpose   string
-	Manual    bool // Don't automatically collect
-	Template  string
-	Contract  string
-	Invoice   *Invoice // either UBL
-	UblBytes  []byte   // or an invoice item
+	Origin           string
+	Reference        string
+	Purpose          string
+	Manual           bool // Don't automatically collect
+	ForceTransaction bool // Ignore the state of the contract if passed
+	Template         string
+	Contract         string
+	Invoice          *Invoice // either UBL
+	UblBytes         []byte   // or an invoice item
 }
 
 // Customer is a json wrapper for usage inside the Invoice object
@@ -144,6 +145,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		if invoiceRequest.Manual {
 			req.Header.Set("X-MANUAL", "true")
 		}
+		if invoiceRequest.ForceTransaction {
+			req.Header.Set("X-FORCE-TRANSACTION", "true")
+		}
 	} else if len(invoiceRequest.UblBytes) != 0 {
 		invoiceUrl := c.BaseURL + "/creditor/invoice/ubl"
 		req, _ = http.NewRequest(http.MethodPost, invoiceUrl, bytes.NewReader(invoiceRequest.UblBytes))
@@ -166,6 +170,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		}
 		if invoiceRequest.Manual {
 			req.Header.Set("X-Manual", "true")
+		}
+		if invoiceRequest.ForceTransaction {
+			req.Header.Set("X-FORCE-TRANSACTION", "true")
 		}
 		if invoiceRequest.Reference != "" {
 			req.Header.Set("X-Ref", invoiceRequest.Reference)
@@ -198,7 +205,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 
-//InvoiceFeed Get invoice Feed twikey
+// InvoiceFeed Get invoice Feed twikey
 func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice), sideloads ...string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
