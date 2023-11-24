@@ -44,6 +44,7 @@ type Invoice struct {
 type Lastpayment []map[string]interface{}
 
 type NewInvoiceRequest struct {
+	Id               string // Allow passing the id for ubl's too
 	Origin           string
 	Reference        string
 	Purpose          string
@@ -125,6 +126,16 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 
 	var req *http.Request
 	if invoiceRequest.Invoice != nil {
+
+		// if id is passed in the request object it needs to be the same as the one in the invoice or bail out
+		if invoiceRequest.Id != "" {
+			if invoiceRequest.Invoice.Id == "" {
+				invoiceRequest.Invoice.Id = invoiceRequest.Id
+			} else if invoiceRequest.Invoice.Id != invoiceRequest.Id {
+				return nil, errors.New("Invoice id of request and invoice should match")
+			}
+		}
+
 		invoiceBytes, err := json.Marshal(invoiceRequest)
 		if err != nil {
 			return nil, err
@@ -156,6 +167,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		req.Header.Set("Authorization", c.apiToken) //Already there
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("User-Agent", c.UserAgent)
+		if invoiceRequest.Id != "" {
+			req.Header.Set("X-INVOICE-ID", invoiceRequest.Id)
+		}
 		if invoiceRequest.Template != "" {
 			req.Header.Set("X-Template", invoiceRequest.Template)
 		}
