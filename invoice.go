@@ -333,3 +333,30 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 	}
 	return NewTwikeyErrorFromResponse(res)
 }
+
+// InvoicePayment allows marking an existing invoice as paid
+func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, method string, paymentdate string) error {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return err
+	}
+
+	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber + "/action"
+	params := url.Values{}
+	params.Add("type", "manualPayment")
+	params.Add("rsn", method)
+	params.Add("date", paymentdate)
+
+	req, _ := http.NewRequest(http.MethodPost, _url, strings.NewReader(params.Encode()))
+	req.WithContext(ctx)
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	res, _ := c.HTTPClient.Do(req)
+	if res.StatusCode == 204 {
+		return nil
+	}
+	return NewTwikeyErrorFromResponse(res)
+}
