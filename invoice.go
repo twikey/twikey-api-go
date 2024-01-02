@@ -199,7 +199,10 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		}
 	}
 
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 		c.Debug.Println("TwikeyInvoice: ", string(payload))
@@ -280,7 +283,10 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, si
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Add("Authorization", c.apiToken)
 
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 
@@ -327,7 +333,10 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Add("Authorization", c.apiToken)
 
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
 	if res.StatusCode == 204 {
 		return nil
 	}
@@ -354,7 +363,10 @@ func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, m
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Add("Authorization", c.apiToken)
 
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
 	if res.StatusCode == 204 {
 		return nil
 	}

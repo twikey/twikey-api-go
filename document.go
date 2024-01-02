@@ -323,7 +323,10 @@ func (c *Client) DocumentFeed(
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("User-Agent", c.UserAgent)
 
-		res, _ := c.HTTPClient.Do(req)
+		res, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return err
+		}
 		if res.StatusCode == 200 {
 			payload, _ := ioutil.ReadAll(res.Body)
 			var updates MandateUpdates
@@ -365,7 +368,10 @@ func (c *Client) DownloadPdf(ctx context.Context, mndtId string, downloadFile st
 	req.Header.Add("Authorization", c.apiToken)
 
 	absPath, _ := filepath.Abs(downloadFile)
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 
@@ -403,7 +409,10 @@ func (c *Client) DocumentDetail(ctx context.Context, mndtId string, force bool) 
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Add("Authorization", c.apiToken)
 
-	res, _ := c.HTTPClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 

@@ -148,8 +148,10 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
 
-		res, _ := c.HTTPClient.Do(req)
-
+		res, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return err
+		}
 		if res.StatusCode == 200 {
 			payload, _ := ioutil.ReadAll(res.Body)
 			_ = res.Body.Close()
@@ -193,8 +195,10 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)
-	res, _ := c.HTTPClient.Do(req)
-
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
 	if res.StatusCode == 200 {
 		payload, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()

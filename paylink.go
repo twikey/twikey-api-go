@@ -119,8 +119,10 @@ func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
 
-		res, _ := c.HTTPClient.Do(req)
-
+		res, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return err
+		}
 		if res.StatusCode == 200 {
 			payload, _ := ioutil.ReadAll(res.Body)
 			_ = res.Body.Close()

@@ -98,8 +98,10 @@ func (c *Client) logout() {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken)
 
-	res, _ := c.HTTPClient.Do(req)
-	if res.StatusCode != 200 {
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		c.Debug.Println("Error in logout from Twikey:", err)
+	} else if res.StatusCode != 200 {
 		c.Debug.Println("Error in logout from Twikey:", res.StatusCode)
 	}
 }
