@@ -52,51 +52,110 @@ Initializing the Twikey API client by configuring your API key which you can fin
 the [Twikey merchant interface](https://www.twikey.com).
 
 ```go
+package example
+
+import "github.com/twikey/twikey-api-go"
+
+func main() {
+   client := twikey.NewClient("YOU_API_KEY")
+}
+
+``` 
+
+It's possible to further configure the API client if so desired using functional options. 
+For example providing a custom HTTP client with a different timeout and a Custom logger
+implementation.
+
+```go
+package example
+
 import (
-    twikey "github.com/twikey/twikey-api-go"
+   "github.com/twikey/twikey-api-go"
+   "log"
+   "net/http"
 )
 
-var twikeyClient = twikey.NewClient(os.Getenv("TWIKEY_API_KEY"))
+func main() {
+   client := twikey.NewClient("YOUR_API_KEY",
+      twikey.WithHTTPClient(&http.Client{Timeout: time.Minute}),
+      twikey.WithLogger(log.Default()),
+   )
+}
 
-var twikeyClient = &twikey.TwikeyClient{
-    ApiKey:  os.Getenv("TWIKEY_API_KEY"),
-    //Debug: log.Default(),
-    HTTPClient: &http.Client{
-        Timeout: time.Minute,
-    },
+``` 
+
+Another example, it's possible to disable logging by setting the value of the logger to `NullLogger`.
+By default, the Twikey client will print logs using the default standard library logger.
+
+```go
+package example
+
+import (
+   "github.com/twikey/twikey-api-go"
+   "log"
+   "net/http"
+)
+
+func main() {
+   client := twikey.NewClient("YOUR_API_KEY",
+      twikey.WithLogger(twikey.NullLogger),
+   )
 }
 
 ``` 
 
 ## Documents
 
-Invite a customer to sign a SEPA mandate using a specific behaviour template (ct) that allows you to configure
-the behaviour or flow that the customer will experience. This 'ct' can be found in the template section of the settings.
+Invite a customer to sign a SEPA mandate using a specific behaviour template (Template) that allows you to configure
+the behaviour or flow that the customer will experience. This can be found in the template section of the settings.
 The extra can be used to pass in extra attributes linked to the mandate.
 
 ```go
-invite, err := twikeyClient.DocumentInvite(context.Background(), &InviteRequest{
-   ct:             yourct,
-   customerNumber: "123",
-   email:          "john@doe.com",
-   firstname:      "John",
-   lastname:       "Doe",
-   l:              "en",
-   address:        "Abbey road",
-   city:           "Liverpool",
-   zip:            "1526",
-   country:        "BE",
-}, nil)
-if err != nil {
-    t.Fatal(err)
+package example
+
+import (
+   "context"
+   "fmt"
+   "github.com/twikey/twikey-api-go"
+   "log"
+   "os"
+)
+
+func main() {
+   client := twikey.NewClient(os.Getenv("TWIKEY_API_KEY"))
+
+   ctx := context.Background()
+   invite, err := client.DocumentSign(ctx, &twikey.InviteRequest{
+      Template:       "YOUR_TEMPLATE_ID",
+      CustomerNumber: "123",
+      Email:          "john@doe.com",
+      Language:       "en",
+      Lastname:       "Doe",
+      Firstname:      "John",
+      Address:        "Abbey Road",
+      City:           "Liverpool",
+      Zip:            "1562",
+      Country:        "EN",
+      Iban:           "GB32BARC20040198915359",
+      Bic:            "GEBEBEB",
+      Method:         "sms",
+      Extra: map[string]string{
+         "SomeKey": "VALUE",
+      },
+   })
+   if err != nil {
+      log.Fatal(err)
+   }
+
+   fmt.Println(invite.Url)
 }
-fmt.println(invite.Url)
+
 ```
 
 _After creation, the link available in invite.Url can be used to redirect the customer into the signing flow or even
 send him a link through any other mechanism. Ideally you store the mandatenumber for future usage (eg. sending transactions)._
 
-The DocumentSign function has a similar syntax only that it requires a method and is mosly used for interactive sessions 
+The DocumentSign function has a similar syntax only that it requires a method and is mostly used for interactive sessions 
 where no screens are involved. See [the documentation](https://api.twikey.com) for more info.
 
 ### Feed

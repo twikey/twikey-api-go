@@ -35,7 +35,7 @@ func TestClient_refreshTokenIfRequired(t *testing.T) {
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		timeProvider: &ttp,
+		TimeProvider: &ttp,
 		Debug:        log.Default(),
 	}
 	c.BaseURL = getEnv("TWIKEY_URL", "https://api.beta.twikey.com")

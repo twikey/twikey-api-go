@@ -33,6 +33,20 @@ func (tp DefaultTimeProvider) Now() time.Time {
 	return time.Now()
 }
 
+type Logger interface {
+	Println(v ...interface{})
+	Printf(format string, v ...interface{})
+}
+
+// nullWriter is an io.Writer that discards all writes.
+type nullWriter struct{}
+
+func (n *nullWriter) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+var NullLogger = log.New(&nullWriter{}, "", log.LstdFlags)
+
 // Client is the base class, please use a dedicated UserAgent so we can notify the emergency contact
 // if weird behaviour is perceived.
 type Client struct {
@@ -42,17 +56,67 @@ type Client struct {
 	Salt         string
 	UserAgent    string
 	HTTPClient   HTTPClient
-	Debug        *log.Logger
+	Debug        Logger
 	apiToken     string
 	lastLogin    time.Time
-	timeProvider TimeProvider
+	TimeProvider TimeProvider
+}
+
+type ClientOption = func(*Client)
+
+// WithLogger sets the Logger for the Client. If you don't want
+// the Client to log anything you can pass in the NullLogger
+func WithLogger(logger Logger) ClientOption {
+	return func(client *Client) {
+		client.Debug = logger
+	}
+}
+
+// WithBaseURL will set the base URL of the API used when making requests.
+//
+// In production, you will probably want to use the default but if you want
+// to make request to some mock API in a test environment you can use this
+// to make the Client make requests to a different host.
+//
+// The default: https://api.twikey.com
+func WithBaseURL(baseURL string) ClientOption {
+	return func(client *Client) {
+		client.BaseURL = baseURL
+	}
+}
+
+// WithHTTPClient configures the underlying HTTP client used to make HTTP requests.
+func WithHTTPClient(httpClient HTTPClient) ClientOption {
+	return func(client *Client) {
+		client.HTTPClient = httpClient
+	}
+}
+
+// WithTimeProvider sets the TimeProvider for this Client.
+func WithTimeProvider(provider TimeProvider) ClientOption {
+	return func(client *Client) {
+		client.TimeProvider = provider
+	}
+}
+
+// WithSalt sets the salt used in generating one-time-passwords
+func WithSalt(salt string) ClientOption {
+	return func(client *Client) {
+		client.Salt = salt
+	}
+}
+
+// WithUserAgent will configure the value that is passed on in the HTTP User-Agent header
+// for all requests to the Twikey API made with this Client
+func WithUserAgent(userAgent string) ClientOption {
+	return func(client *Client) {
+		client.UserAgent = userAgent
+	}
 }
 
 // NewClient is a convenience method to hit the ground running with the Twikey Rest API
-func NewClient(apiKey string) *Client {
-	logger := log.Default()
-	logger.SetOutput(ioutil.Discard)
-	return &Client{
+func NewClient(apiKey string, opts ...ClientOption) *Client {
+	c := &Client{
 		BaseURL:   baseURLV1,
 		APIKey:    apiKey,
 		Salt:      "own",
@@ -60,9 +124,15 @@ func NewClient(apiKey string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		Debug:        logger,
-		timeProvider: DefaultTimeProvider{},
+		Debug:        log.Default(),
+		TimeProvider: DefaultTimeProvider{},
 	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 type errorResponse struct {

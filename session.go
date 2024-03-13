@@ -48,7 +48,7 @@ func generateOtp(_salt string, _privKey string) (int, error) {
 
 func (c *Client) refreshTokenIfRequired() error {
 
-	if c.timeProvider.Now().Sub(c.lastLogin).Hours() < 23 {
+	if c.TimeProvider.Now().Sub(c.lastLogin).Hours() < 23 {
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func (c *Client) refreshTokenIfRequired() error {
 			if resp.StatusCode == 200 && token != nil {
 				c.Debug.Println("Connected to", c.BaseURL, "with token", token[0])
 				c.apiToken = token[0]
-				c.lastLogin = c.timeProvider.Now()
+				c.lastLogin = c.TimeProvider.Now()
 				return nil
 			} else if resp.StatusCode > 500 {
 				c.Debug.Println("General error", resp.StatusCode, resp.Status)
