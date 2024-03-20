@@ -114,7 +114,7 @@ func (request *UpdateRequest) asUrlParams() string {
 	addIfExists(params, "l", request.Language)
 	addIfExists(params, "lastname", request.Lastname)
 	addIfExists(params, "firstname", request.Firstname)
-	addIfExists(params, "mandateNumber", request.MandateNumber)
+	addIfExists(params, "mndtId", request.MandateNumber)
 	addIfExists(params, "contractNumber", request.ContractNumber)
 	addIfExists(params, "companyName", request.CompanyName)
 	addIfExists(params, "coc", request.Coc)
@@ -124,12 +124,26 @@ func (request *UpdateRequest) asUrlParams() string {
 	addIfExists(params, "country", request.Country)
 	addIfExists(params, "iban", request.Iban)
 	addIfExists(params, "bic", request.Bic)
+	addIfExists(params, "state", request.State)
 	if request.Extra != nil {
 		for k, v := range request.Extra {
 			addIfExists(params, k, v)
 		}
 	}
 	return params.Encode()
+}
+
+type SetActiveRequest struct {
+	// The Document or MandateNumber
+	MandateNumber string
+
+	// State controls whether the document will be active or passive.
+	// false -> passive, true -> active
+	//
+	// Note: The default value for a bool is false, so sending a requests
+	// without this value being explicitly set will be interpreted as a request
+	// to set the state value to passive!
+	State bool
 }
 
 func (request *UpdateRequest) Add(key string, value string) {
@@ -280,6 +294,21 @@ func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) err
 		return err
 	}
 	return nil
+}
+
+// DocumentChangeState is a convenience method to quickly change the state (active or passive) of a document
+func (c *Client) DocumentSetActive(ctx context.Context, request *SetActiveRequest) error {
+	if request.State {
+		return c.DocumentUpdate(ctx, &UpdateRequest{
+			MandateNumber: request.MandateNumber,
+			State:         "active",
+		})
+	}
+
+	return c.DocumentUpdate(ctx, &UpdateRequest{
+		MandateNumber: request.MandateNumber,
+		State:         "passive",
+	})
 }
 
 // DocumentCancel allows to cancel (or delete if unsigned) a previously added document
