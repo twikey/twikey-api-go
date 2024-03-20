@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -124,7 +124,7 @@ func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink
 			return err
 		}
 		if res.StatusCode == 200 {
-			payload, _ := ioutil.ReadAll(res.Body)
+			payload, _ := io.ReadAll(res.Body)
 			_ = res.Body.Close()
 			var paylinks PaylinkList
 			err := json.Unmarshal(payload, &paylinks)

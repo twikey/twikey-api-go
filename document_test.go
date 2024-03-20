@@ -68,6 +68,20 @@ func TestDocumentFeed(t *testing.T) {
 		t.Error("No valid import")
 	} else {
 		t.Log("Imported", mandateimport.MndtId)
+
+		// Suspend mandate
+		err = c.DocumentSuspend(context.Background(), mandateimport.MndtId, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("Suspended", mandateimport.MndtId)
+
+		// And resume again mandate
+		err = c.DocumentSuspend(context.Background(), mandateimport.MndtId, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("Resumed", mandateimport.MndtId)
 	}
 
 	t.Run("DocumentFeed", func(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -168,7 +168,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 		return err
 	}
 
-	payload, _ := ioutil.ReadAll(res.Body)
+	payload, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 
 	c.Debug.Println("Response for", req.Method, req.URL, "was", string(payload))

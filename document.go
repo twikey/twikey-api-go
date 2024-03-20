@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -108,13 +108,14 @@ type UpdateRequest struct {
 
 func (request *UpdateRequest) asUrlParams() string {
 	params := url.Values{}
+	addIfExists(params, "mndtId", request.MandateNumber)
+	addIfExists(params, "state", request.State)
 	addIfExists(params, "customerNumber", request.CustomerNumber)
 	addIfExists(params, "email", request.Email)
 	addIfExists(params, "mobile", request.Mobile)
 	addIfExists(params, "l", request.Language)
 	addIfExists(params, "lastname", request.Lastname)
 	addIfExists(params, "firstname", request.Firstname)
-	addIfExists(params, "mandateNumber", request.MandateNumber)
 	addIfExists(params, "contractNumber", request.ContractNumber)
 	addIfExists(params, "companyName", request.CompanyName)
 	addIfExists(params, "coc", request.Coc)
@@ -215,10 +216,6 @@ type MandateUpdates struct {
 // DocumentInvite allows to invite a customer to sign a specific document
 func (c *Client) DocumentInvite(ctx context.Context, request *InviteRequest) (*Invite, error) {
 
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return nil, err
-	}
-
 	if request.Template == "" {
 		return nil, errors.New("A template is required")
 	}
@@ -237,10 +234,6 @@ func (c *Client) DocumentInvite(ctx context.Context, request *InviteRequest) (*I
 // DocumentSign allows a customer to sign directly a specific document
 func (c *Client) DocumentSign(ctx context.Context, request *InviteRequest) (*Invite, error) {
 
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return nil, err
-	}
-
 	if request.Template == "" {
 		return nil, errors.New("A template is required")
 	}
@@ -258,10 +251,6 @@ func (c *Client) DocumentSign(ctx context.Context, request *InviteRequest) (*Inv
 
 // DocumentUpdate allows to update a previously added document
 func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) error {
-
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return err
-	}
 
 	if request.MandateNumber == "" {
 		return NewTwikeyError("err_invalid_mandatenumber", "A mndtId is required", "")
@@ -285,8 +274,8 @@ func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) err
 // DocumentCancel allows to cancel (or delete if unsigned) a previously added document
 func (c *Client) DocumentCancel(ctx context.Context, mandate string, reason string) error {
 
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return err
+	if mandate == "" {
+		return NewTwikeyError("err_invalid_mandatenumber", "A mandate is required", "")
 	}
 
 	params := url.Values{}
@@ -303,6 +292,24 @@ func (c *Client) DocumentCancel(ctx context.Context, mandate string, reason stri
 
 	err := c.sendRequest(req, nil)
 	return err
+}
+
+// DocumentSuspend allows to suspend/resume a signed document
+func (c *Client) DocumentSuspend(ctx context.Context, mandate string, suspend bool) error {
+
+	if mandate == "" {
+		return NewTwikeyError("err_invalid_mandatenumber", "A mandate is required", "")
+	}
+
+	newState := "active"
+	if suspend {
+		newState = "passive"
+	}
+
+	return c.DocumentUpdate(ctx, &UpdateRequest{
+		MandateNumber: mandate,
+		State:         newState,
+	})
 }
 
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many
@@ -328,7 +335,7 @@ func (c *Client) DocumentFeed(
 			return err
 		}
 		if res.StatusCode == 200 {
-			payload, _ := ioutil.ReadAll(res.Body)
+			payload, _ := io.ReadAll(res.Body)
 			var updates MandateUpdates
 			err := json.Unmarshal(payload, &updates)
 			if err != nil {
@@ -373,7 +380,7 @@ func (c *Client) DownloadPdf(ctx context.Context, mndtId string, downloadFile st
 		return err
 	}
 	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
+		payload, _ := io.ReadAll(res.Body)
 
 		f, _ := os.Create(downloadFile)
 		defer f.Close()
@@ -414,7 +421,7 @@ func (c *Client) DocumentDetail(ctx context.Context, mndtId string, force bool) 
 		return nil, err
 	}
 	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
+		payload, _ := io.ReadAll(res.Body)
 
 		var mndt MndtDetail
 		err := json.Unmarshal(payload, &mndt)

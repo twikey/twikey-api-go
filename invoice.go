@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -117,7 +117,7 @@ type InvoiceFeedMeta struct {
 	LastError string `json:"lastError,omitempty"`
 }
 
-// InvoiceFromUbl sends an invoice to Twikey in UBL format
+// InvoiceAdd sends an invoice to Twikey in UBL format
 func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceRequest) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
@@ -132,7 +132,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 			if invoiceRequest.Invoice.Id == "" {
 				invoiceRequest.Invoice.Id = invoiceRequest.Id
 			} else if invoiceRequest.Invoice.Id != invoiceRequest.Id {
-				return nil, errors.New("Invoice id of request and invoice should match")
+				return nil, errors.New("invoice id of request and invoice should match")
 			}
 		}
 
@@ -204,7 +204,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		return nil, err
 	}
 	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
+		payload, _ := io.ReadAll(res.Body)
 		c.Debug.Println("TwikeyInvoice: ", string(payload))
 		if res.Header["X-Warning"] != nil {
 			c.Debug.Println("Warning for new invoice with ref=", invoiceRequest.Reference, res.Header["X-Warning"])
@@ -217,7 +217,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		return &invoice, nil
 	}
 
-	errLoad, _ := ioutil.ReadAll(res.Body)
+	errLoad, _ := io.ReadAll(res.Body)
 	c.Debug.Println("Error sending invoice to Twikey: ", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
@@ -288,7 +288,7 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, si
 		return nil, err
 	}
 	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
+		payload, _ := io.ReadAll(res.Body)
 
 		var invoice Invoice
 		err := json.Unmarshal(payload, &invoice)
@@ -323,7 +323,7 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 	case InvoiceAction_REOFFER:
 		params.Add("type", "reoffer")
 	default:
-		return errors.New("Invalid action")
+		return errors.New("invalid action")
 	}
 
 	req, _ := http.NewRequest(http.MethodPost, _url, strings.NewReader(params.Encode()))

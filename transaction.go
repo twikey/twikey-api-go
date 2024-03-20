@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,7 +26,7 @@ type TransactionRequest struct {
 	Force                         bool
 }
 
-// TransactionRequest is the payload to be send to Twikey when a new transaction should be send
+// ReservationRequest is the payload to be send to Twikey when a new transaction should be send
 type ReservationRequest struct {
 	DocumentReference string
 	Amount            float64
@@ -153,7 +153,7 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 			return err
 		}
 		if res.StatusCode == 200 {
-			payload, _ := ioutil.ReadAll(res.Body)
+			payload, _ := io.ReadAll(res.Body)
 			_ = res.Body.Close()
 			var paymentResponse TransactionList
 			err := json.Unmarshal(payload, &paymentResponse)
@@ -182,16 +182,20 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 		return "", err
 	}
 
-	_url := c.BaseURL + "/creditor/collect"
+	if template == "" {
+		return "", NewTwikeyError("err_invalid_template", "A template is required", "")
+	}
+
+	params := url.Values{}
 	if _, err := strconv.Atoi(template); err == nil {
-		_url = _url + "?ct=" + template
+		params.Add("ct", template)
 	} else {
-		_url = _url + "?tc=" + template
+		params.Add("tc", template)
 	}
 	if prenotify {
-		_url = _url + "&prenotify=true"
+		params.Add("prenotify", "true")
 	}
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, _url, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/collect", strings.NewReader(params.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -200,7 +204,7 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 		return "", err
 	}
 	if res.StatusCode == 200 {
-		payload, _ := ioutil.ReadAll(res.Body)
+		payload, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		var collectionResponse CollectResponse
 		err := json.Unmarshal(payload, &collectionResponse)
