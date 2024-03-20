@@ -298,16 +298,14 @@ func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) err
 
 // DocumentChangeState is a convenience method to quickly change the state (active or passive) of a document
 func (c *Client) DocumentSetActive(ctx context.Context, request *SetActiveRequest) error {
-	if request.State {
-		return c.DocumentUpdate(ctx, &UpdateRequest{
-			MandateNumber: request.MandateNumber,
-			State:         "active",
-		})
+	state := "active"
+	if !request.State {
+		state = "passive"
 	}
 
 	return c.DocumentUpdate(ctx, &UpdateRequest{
 		MandateNumber: request.MandateNumber,
-		State:         "passive",
+		State:         state,
 	})
 }
 
