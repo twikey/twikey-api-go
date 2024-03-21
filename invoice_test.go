@@ -71,5 +71,26 @@ func TestInvoiceAdd(t *testing.T) {
 		} else {
 			t.Log("New invoice", invoice.Id)
 		}
+
+		cnote, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
+			Invoice: &Invoice{
+				Number:         "124",
+				RelatedInvoice: "123",
+				Title:          "TestCreditNote 123",
+				Date:           "2021-01-02",
+				Duedate:        "2021-03-01",
+				Remittance:     "123",
+				Amount:         -1.00,
+				Customer: &Customer{
+					CustomerNumber: "123",
+				},
+			},
+			Origin: "Go-Test",
+		})
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("New CreditNote", cnote.Id)
+		}
 	})
 }

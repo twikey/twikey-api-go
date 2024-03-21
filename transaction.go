@@ -14,6 +14,7 @@ import (
 
 // TransactionRequest is the payload to be send to Twikey when a new transaction should be send
 type TransactionRequest struct {
+	IdempotencyKey                string
 	DocumentReference             string
 	TransactionDate               string
 	RequestedCollection           string
@@ -28,6 +29,7 @@ type TransactionRequest struct {
 
 // ReservationRequest is the payload to be send to Twikey when a new transaction should be send
 type ReservationRequest struct {
+	IdempotencyKey    string
 	DocumentReference string
 	Amount            float64
 	Minimum           float64
@@ -88,9 +90,12 @@ func (c *Client) TransactionNew(ctx context.Context, transaction *TransactionReq
 		params.Add("refase2e", "true")
 	}
 
-	c.Debug.Println("New transaction", params)
+	c.Debug.Debugf("New transaction %s", params)
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/transaction", strings.NewReader(params.Encode()))
+	if transaction.IdempotencyKey != "" {
+		req.Header.Add("Idempotency-Key", transaction.IdempotencyKey)
+	}
 	if transaction.Reservation != "" {
 		req.Header.Add("X-RESERVATION", transaction.Reservation)
 	}
@@ -119,8 +124,11 @@ func (c *Client) ReservationNew(ctx context.Context, reservationRequest *Reserva
 	if reservationRequest.Force {
 		params.Add("force", "true")
 	}
-	c.Debug.Println("New reservation", params)
+	c.Debug.Debugf("New reservation %s", params)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/reservation", strings.NewReader(params.Encode()))
+	if reservationRequest.IdempotencyKey != "" {
+		req.Header.Add("Idempotency-Key", reservationRequest.IdempotencyKey)
+	}
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
@@ -158,7 +166,7 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 			var paymentResponse TransactionList
 			err := json.Unmarshal(payload, &paymentResponse)
 			if err == nil {
-				c.Debug.Printf("Fetched %d transactions\n", len(paymentResponse.Entries))
+				c.Debug.Debugf("Fetched %d transactions", len(paymentResponse.Entries))
 				for _, transaction := range paymentResponse.Entries {
 					callback(&transaction)
 				}
@@ -169,7 +177,7 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 				return nil
 			}
 		} else {
-			c.Debug.Println("Error response from Twikey: ", res.StatusCode)
+			c.Debug.Debugf("Error response from Twikey: %d", res.StatusCode)
 			return NewTwikeyErrorFromResponse(res)
 		}
 	}
@@ -209,13 +217,13 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 		var collectionResponse CollectResponse
 		err := json.Unmarshal(payload, &collectionResponse)
 		if err == nil && collectionResponse.ID != "" {
-			c.Debug.Printf("Collected transaction for %s into %s\n", template, collectionResponse.ID)
+			c.Debug.Debugf("Collected transaction for %s into %s", template, collectionResponse.ID)
 			return collectionResponse.ID, nil
 		} else {
 			return "", err
 		}
 	} else {
-		c.Debug.Println("Error response from Twikey: ", res.StatusCode)
+		c.Debug.Debugf("Error response from Twikey: %d", res.StatusCode)
 		return "", NewTwikeyErrorFromResponse(res)
 	}
 }

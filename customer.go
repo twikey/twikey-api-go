@@ -8,16 +8,12 @@ import (
 
 func (c *Client) CustomerUpdate(ctx context.Context, request *Customer) error {
 
-	if err := c.refreshTokenIfRequired(); err != nil {
-		return err
-	}
-
 	if request.CustomerNumber == "" {
 		return errors.New("A customerNumber is required")
 	}
 
 	params := request.asUrlParams()
-	c.Debug.Println("Update customer", params)
+	c.Debug.Debugf("Update customer %s", params)
 
 	req, _ := http.NewRequestWithContext(ctx, "PATCH", c.BaseURL+"/customer/"+request.CustomerNumber+"?"+params, nil)
 	if err := c.sendRequest(req, nil); err != nil {

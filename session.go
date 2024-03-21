@@ -59,7 +59,7 @@ func (c *Client) refreshTokenIfRequired() error {
 		params.Add("otp", fmt.Sprint(otp))
 	}
 
-	c.Debug.Println("Connecting to", c.BaseURL, "with", c.APIKey)
+	c.Debug.Tracef("Connecting to %s with %s", c.BaseURL, c.APIKey)
 
 	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/creditor", strings.NewReader(params.Encode()))
 	if err == nil {
@@ -69,18 +69,18 @@ func (c *Client) refreshTokenIfRequired() error {
 		if err == nil {
 			token := resp.Header["Authorization"]
 			if resp.StatusCode == 200 && token != nil {
-				c.Debug.Println("Connected to", c.BaseURL, "with token", token[0])
+				c.Debug.Tracef("Connected to %s with token %s", c.BaseURL, token[0])
 				c.apiToken = token[0]
 				c.lastLogin = c.TimeProvider.Now()
 				return nil
 			} else if resp.StatusCode > 500 {
-				c.Debug.Println("General error", resp.StatusCode, resp.Status)
+				c.Debug.Tracef("General error : [%d] %s", resp.StatusCode, resp.Status)
 				err = NewTwikeyErrorFromResponse(resp)
 			} else if resp.StatusCode > 200 {
-				c.Debug.Println("Other error", resp.StatusCode, resp.Status)
+				c.Debug.Tracef("Other error : [%d] %s", resp.StatusCode, resp.Status)
 				err = NewTwikeyErrorFromResponse(resp)
 			} else if errcode := resp.Header["Apierror"]; errcode != nil {
-				c.Debug.Println("Error invalid apiToken status =", errcode[0])
+				c.Debug.Tracef("Error invalid apiToken status = %s", errcode[0])
 				err = NewTwikeyError(errcode[0], "Invalid apiToken", "")
 			}
 		}
@@ -88,7 +88,7 @@ func (c *Client) refreshTokenIfRequired() error {
 		c.lastLogin = time.Unix(0, 0)
 		return err
 	}
-	c.Debug.Println("Error while connecting :", err)
+	c.Debug.Debugf("Error while connecting : %v", err)
 	return err
 }
 
@@ -100,8 +100,8 @@ func (c *Client) logout() {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		c.Debug.Println("Error in logout from Twikey:", err)
+		c.Debug.Debugf("Error in logout from Twikey: %v", err)
 	} else if res.StatusCode != 200 {
-		c.Debug.Println("Error in logout from Twikey:", res.StatusCode)
+		c.Debug.Debugf("Error in logout from Twikey: %d", res.StatusCode)
 	}
 }

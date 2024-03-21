@@ -18,11 +18,12 @@ func TestClientWithBasicFunctionalOptions(t *testing.T) {
 	userAgent := "someUserAgent"
 	apikey := "123"
 
+	logger := NewDebugLogger(log.Default())
 	c := NewClient(apikey,
 		WithBaseURL(baseUrl),
 		WithSalt(salt),
 		WithUserAgent(userAgent),
-		WithLogger(log.Default()),
+		WithLogger(logger),
 	)
 
 	if c.APIKey != apikey {
@@ -41,7 +42,7 @@ func TestClientWithBasicFunctionalOptions(t *testing.T) {
 		t.Fatalf("Expected client UserAgent to be %s but was %s", userAgent, c.UserAgent)
 	}
 
-	if c.Debug != log.Default() {
+	if c.Debug != logger {
 		t.Fatalf("Expected the default logger from log to be used")
 	}
 }

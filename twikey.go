@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,20 +31,6 @@ type DefaultTimeProvider struct{}
 func (tp DefaultTimeProvider) Now() time.Time {
 	return time.Now()
 }
-
-type Logger interface {
-	Println(v ...interface{})
-	Printf(format string, v ...interface{})
-}
-
-// nullWriter is an io.Writer that discards all writes.
-type nullWriter struct{}
-
-func (n *nullWriter) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
-var NullLogger = log.New(&nullWriter{}, "", log.LstdFlags)
 
 // Client is the base class, please use a dedicated UserAgent so we can notify the emergency contact
 // if weird behaviour is perceived.
@@ -122,9 +107,9 @@ func NewClient(apiKey string, opts ...ClientOption) *Client {
 		Salt:      "own",
 		UserAgent: twikeyBaseAgent,
 		HTTPClient: &http.Client{
-			Timeout: time.Minute,
+			Timeout: 30 * time.Second,
 		},
-		Debug:        log.Default(),
+		Debug:        &NullLogger{},
 		TimeProvider: DefaultTimeProvider{},
 	}
 
@@ -160,22 +145,22 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", c.apiToken)
 
-	c.Debug.Println("Calling", req.Method, req.URL)
+	c.Debug.Tracef("Calling %s %s", req.Method, req.URL)
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		c.Debug.Println("Error while connecting", err)
+		c.Debug.Tracef("Error while connecting %v", err)
 		return err
 	}
 
 	payload, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 
-	c.Debug.Println("Response for", req.Method, req.URL, "was", string(payload))
+	c.Debug.Tracef("Response for %s %s %s", req.Method, req.URL, string(payload))
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		if res.Header.Get("Apierror") == "err_no_login" {
-			c.Debug.Println("Error while using apitoken, renewing")
+			c.Debug.Tracef("Error while using apitoken, renewing")
 			c.lastLogin = time.Time{} // force re-authenticate
 		}
 		var errRes errorResponse
@@ -200,7 +185,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 func (c *Client) VerifyWebhook(signatureHeader string, payload string) error {
 	hash := hmac.New(sha256.New, []byte(c.APIKey))
 	if _, err := hash.Write([]byte(payload)); err != nil {
-		c.Debug.Println("Error cannot compute the HMAC for request: ", err)
+		c.Debug.Tracef("Error cannot compute the HMAC for request: %v", err)
 		return err
 	}
 

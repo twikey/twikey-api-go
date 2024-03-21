@@ -221,7 +221,7 @@ func (c *Client) DocumentInvite(ctx context.Context, request *InviteRequest) (*I
 	}
 
 	params := request.asUrlParams()
-	c.Debug.Println("New document", params)
+	c.Debug.Debugf("New document %s", params)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/invite", strings.NewReader(params))
 
 	var invite Invite
@@ -239,7 +239,7 @@ func (c *Client) DocumentSign(ctx context.Context, request *InviteRequest) (*Inv
 	}
 
 	params := request.asUrlParams()
-	c.Debug.Println("New sign document", params)
+	c.Debug.Debugf("New sign document %s", params)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/sign", strings.NewReader(params))
 
 	var invite Invite
@@ -256,7 +256,7 @@ func (c *Client) DocumentUpdate(ctx context.Context, request *UpdateRequest) err
 		return NewTwikeyError("err_invalid_mandatenumber", "A mndtId is required", "")
 	}
 
-	c.Debug.Println("Update document", request.MandateNumber, request.asUrlParams())
+	c.Debug.Debugf("Update document %s : %s", request.MandateNumber, request.asUrlParams())
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/mandate/update", strings.NewReader(request.asUrlParams()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -282,7 +282,7 @@ func (c *Client) DocumentCancel(ctx context.Context, mandate string, reason stri
 	params.Add("mndtId", mandate)
 	params.Add("rsn", reason)
 
-	c.Debug.Println("Cancelled document", mandate, reason)
+	c.Debug.Debugf("Cancelled document %s : %s", mandate, reason)
 
 	req, _ := http.NewRequestWithContext(ctx, "DELETE", c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -343,7 +343,7 @@ func (c *Client) DocumentFeed(
 			}
 
 			res.Body.Close()
-			c.Debug.Printf("Fetched %d documents\n", len(updates.Messages))
+			c.Debug.Debugf("Fetched %d documents\n", len(updates.Messages))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
 					cancelledDocument(update.OrgnlMndtId, update.CxlRsn, update.EvtTime)
@@ -386,13 +386,13 @@ func (c *Client) DownloadPdf(ctx context.Context, mndtId string, downloadFile st
 		defer f.Close()
 		_, err := f.Write(payload)
 		if err != nil {
-			c.Debug.Println("Unable to download file:", absPath, err)
+			c.Debug.Debugf("Unable to download file %s : %v", absPath, err)
 		} else {
-			c.Debug.Println("Saving to file:", absPath)
+			c.Debug.Debugf("Saving to file %s", absPath)
 		}
 		return err
 	}
-	c.Debug.Println("Unable to download file:", absPath)
+	c.Debug.Debugf("Unable to download file %s", absPath)
 	return NewTwikeyErrorFromResponse(res)
 }
 

@@ -23,8 +23,10 @@ const (
 
 // Invoice is the base object for sending and receiving invoices to Twikey
 type Invoice struct {
-	Id                 string           `json:"id,omitempty"`
-	Number             string           `json:"number"`
+	Id     string `json:"id,omitempty"`
+	Number string `json:"number"`
+	// RelatedInvoice in case this is a creditNote
+	RelatedInvoice     string           `json:"relatedInvoiceNumber"`
 	Title              string           `json:"title"`
 	Remittance         string           `json:"remittance"`
 	Ct                 int              `json:"ct,omitempty"`
@@ -44,6 +46,7 @@ type Invoice struct {
 type Lastpayment []map[string]interface{}
 
 type NewInvoiceRequest struct {
+	IdempotencyKey   string //   Avoid double entries
 	Id               string // Allow passing the id for ubl's too
 	Origin           string
 	Reference        string
@@ -159,6 +162,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		if invoiceRequest.ForceTransaction {
 			req.Header.Set("X-FORCE-TRANSACTION", "true")
 		}
+		if invoiceRequest.IdempotencyKey != "" {
+			req.Header.Add("Idempotency-Key", invoiceRequest.IdempotencyKey)
+		}
 	} else if len(invoiceRequest.UblBytes) != 0 {
 		invoiceUrl := c.BaseURL + "/creditor/invoice/ubl"
 		req, _ = http.NewRequest(http.MethodPost, invoiceUrl, bytes.NewReader(invoiceRequest.UblBytes))
@@ -191,6 +197,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		if invoiceRequest.Reference != "" {
 			req.Header.Set("X-Ref", invoiceRequest.Reference)
 		}
+		if invoiceRequest.IdempotencyKey != "" {
+			req.Header.Add("Idempotency-Key", invoiceRequest.IdempotencyKey)
+		}
 	} else {
 		return nil, &TwikeyError{
 			Status:  0,
@@ -205,9 +214,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 	}
 	if res.StatusCode == 200 {
 		payload, _ := io.ReadAll(res.Body)
-		c.Debug.Println("TwikeyInvoice: ", string(payload))
+		c.Debug.Debugf("TwikeyInvoice: %s", string(payload))
 		if res.Header["X-Warning"] != nil {
-			c.Debug.Println("Warning for new invoice with ref=", invoiceRequest.Reference, res.Header["X-Warning"])
+			c.Debug.Debugf("Warning for new invoice with ref=%s : %s", invoiceRequest.Reference, res.Header["X-Warning"])
 		}
 		var invoice Invoice
 		err := json.Unmarshal(payload, &invoice)
@@ -218,7 +227,7 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 	}
 
 	errLoad, _ := io.ReadAll(res.Body)
-	c.Debug.Println("Error sending invoice to Twikey: ", string(errLoad))
+	c.Debug.Debugf("Error sending invoice to Twikey: %s", string(errLoad))
 	return nil, NewTwikeyErrorFromResponse(res)
 }
 

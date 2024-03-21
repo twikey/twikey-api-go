@@ -1,7 +1,6 @@
 package twikey
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -28,17 +27,16 @@ func TestClient_refreshTokenIfRequired(t *testing.T) {
 		currentTime: time.Now(),
 	}
 	c := Client{
-		BaseURL:   baseURLV1,
+		BaseURL:   getEnv("TWIKEY_URL", "https://api.beta.twikey.com"),
 		APIKey:    os.Getenv("TWIKEY_API_KEY"),
 		Salt:      "own",
 		UserAgent: twikeyBaseAgent,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
+		Debug:        NullLogger{},
 		TimeProvider: &ttp,
-		Debug:        log.Default(),
 	}
-	c.BaseURL = getEnv("TWIKEY_URL", "https://api.beta.twikey.com")
 
 	err := c.refreshTokenIfRequired()
 	if err != nil {

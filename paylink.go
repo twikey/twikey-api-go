@@ -13,6 +13,7 @@ import (
 // PaylinkRequest is the base object for sending and receiving paylinks to Twikey
 type PaylinkRequest struct {
 	CustomerNumber string  //	The customer number (strongly advised)
+	IdempotencyKey string  //   Avoid double entries
 	Email          string  //	Email of the debtor	(Required to send invite)
 	Lastname       string  //	lastname
 	Firstname      string  //	firstname
@@ -86,9 +87,13 @@ func (c *Client) PaylinkNew(ctx context.Context, paylinkRequest *PaylinkRequest)
 		}
 	}
 
-	c.Debug.Println("New link", params.Encode())
+	c.Debug.Debugf("New link : %s", params.Encode())
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/payment/link", strings.NewReader(params.Encode()))
+	if paylinkRequest.IdempotencyKey != "" {
+		req.Header.Add("Idempotency-Key", paylinkRequest.IdempotencyKey)
+	}
+
 	var paylink Paylink
 	err := c.sendRequest(req, &paylink)
 	if err != nil {
@@ -129,7 +134,7 @@ func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink
 			var paylinks PaylinkList
 			err := json.Unmarshal(payload, &paylinks)
 			if err == nil {
-				c.Debug.Printf("Fetched %d links\n", len(paylinks.Links))
+				c.Debug.Debugf("Fetched %d links", len(paylinks.Links))
 				for _, paylink := range paylinks.Links {
 					callback(&paylink)
 				}
@@ -140,7 +145,7 @@ func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink
 				return nil
 			}
 		} else {
-			c.Debug.Println("Error response from Twikey: ", res.StatusCode)
+			c.Debug.Debugf("Error response from Twikey: %d", res.StatusCode)
 			return NewTwikeyErrorFromResponse(res)
 		}
 	}
