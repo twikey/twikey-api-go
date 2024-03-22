@@ -200,7 +200,7 @@ err := twikeyClient.TransactionFeed(context.Background(), func(transaction *Tran
 When wants to inform you about new updates about documents or payments a `webhookUrl` specified in your api settings be called.
 
 ```go
-err := twikeyClient.verifyWebhook("55261CBC12BF62000DE1371412EF78C874DBC46F513B078FB9FF8643B2FD4FC2", "abc=123&name=abc")
+err := twikeyClient.VerifyWebhook("55261CBC12BF62000DE1371412EF78C874DBC46F513B078FB9FF8643B2FD4FC2", "abc=123&name=abc")
 if err != nil {
     t.Fatal(err)
 }
