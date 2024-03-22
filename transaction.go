@@ -206,9 +206,7 @@ func WithUntil(until int64) CollectionOptionFunc {
 
 // TransactionCollect collects all open transaction
 func (c *Client) TransactionCollect(ctx context.Context, template string, prenotify bool, opts ...CollectionOptionFunc) (string, error) {
-	opt := CollectOptions{
-		Until: 0,
-	}
+	opt := CollectOptions{}
 
 	for _, f := range opts {
 		f(opt)
@@ -228,6 +226,7 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 	} else {
 		params.Add("tc", template)
 	}
+	// TODO: Add this the the optional parameters
 	if prenotify {
 		params.Add("prenotify", "true")
 	}
