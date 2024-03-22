@@ -191,7 +191,7 @@ type CollectOptions struct {
 	Until int64
 }
 
-type CollectionOptionFunc = func(options CollectOptions)
+type CollectionOptionFunc = func(options *CollectOptions)
 
 // WithUntil will set the value for the "until" parameter.
 // It is used to filter the eventual transactions that will be sent for collection
@@ -199,7 +199,7 @@ type CollectionOptionFunc = func(options CollectOptions)
 // transaction that was logged before this timestamp will be ignored.
 // The default value is 0 and will result in this parameter not being used.
 func WithUntil(until int64) CollectionOptionFunc {
-	return func(options CollectOptions) {
+	return func(options *CollectOptions) {
 		options.Until = until
 	}
 }
@@ -209,7 +209,7 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 	opt := CollectOptions{}
 
 	for _, f := range opts {
-		f(opt)
+		f(&opt)
 	}
 
 	if err := c.refreshTokenIfRequired(); err != nil {
@@ -240,6 +240,9 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 	req.Header.Add("Authorization", c.apiToken)
 	req.Header.Set("User-Agent", c.UserAgent)
 	res, err := c.HTTPClient.Do(req)
+
+	c.Debug.Debugf("Collected transaction for %s using %s", template, params.Encode())
+
 	if err != nil {
 		return "", err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestTransactions(t *testing.T) {
@@ -25,6 +26,16 @@ func TestTransactions(t *testing.T) {
 			}
 		} else {
 			t.Fatal(tx)
+		}
+
+		oneMinuteAgo := time.Now().Add(time.Minute)
+		collect, err := c.TransactionCollect(context.Background(), getEnv("CT", "1"), false, WithUntil(oneMinuteAgo.UnixMilli()))
+		if err != nil {
+			if err.Error() != "Could not collect" && err.Error() != "Not authorised" {
+				t.Fatal(err)
+			}
+		} else if collect != "" {
+			t.Log("Collected", collect)
 		}
 	})
 
