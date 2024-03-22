@@ -183,8 +183,34 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 	}
 }
 
+type CollectOptions struct {
+	// Until is used to filter the eventual transactions that will be sent for collection
+	// this value is interpreted as a unix timestamp using milliseconds precision. Any
+	// transaction that was logged before this timestamp will be ignored.
+	// The default value is 0 and will result in this parameter not being used.
+	Until int64
+}
+
+type CollectionOptionFunc = func(options CollectOptions)
+
+// WithUntil will set the value for the "until" parameter.
+// It is used to filter the eventual transactions that will be sent for collection
+// this value is interpreted as a unix timestamp using milliseconds precision. Any
+// transaction that was logged before this timestamp will be ignored.
+// The default value is 0 and will result in this parameter not being used.
+func WithUntil(until int64) CollectionOptionFunc {
+	return func(options CollectOptions) {
+		options.Until = until
+	}
+}
+
 // TransactionCollect collects all open transaction
-func (c *Client) TransactionCollect(ctx context.Context, template string, prenotify bool) (string, error) {
+func (c *Client) TransactionCollect(ctx context.Context, template string, prenotify bool, opts ...CollectionOptionFunc) (string, error) {
+	opt := CollectOptions{}
+
+	for _, f := range opts {
+		f(opt)
+	}
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return "", err
@@ -200,9 +226,15 @@ func (c *Client) TransactionCollect(ctx context.Context, template string, prenot
 	} else {
 		params.Add("tc", template)
 	}
+	// TODO: Add this the the optional parameters
 	if prenotify {
 		params.Add("prenotify", "true")
 	}
+
+	if opt.Until != 0 {
+		params.Add("until", strconv.FormatInt(opt.Until, 10))
+	}
+
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/creditor/collect", strings.NewReader(params.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", c.apiToken)
