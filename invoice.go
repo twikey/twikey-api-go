@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -232,14 +233,15 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 }
 
 // InvoiceFeed Get invoice Feed twikey
-func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice), sideloads ...string) error {
+func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice), options ...FeedOption) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
+	feedOptions := parseFeedOptions(options)
 	_url := c.BaseURL + "/creditor/invoice"
-	for i, sideload := range sideloads {
+	for i, sideload := range feedOptions.includes {
 		if i == 0 {
 			_url = _url + "?include=" + sideload
 		} else {
@@ -247,37 +249,42 @@ func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice
 		}
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", c.apiToken) //Already there
-	req.Header.Set("User-Agent", c.UserAgent)
+	for {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Authorization", c.apiToken)
+		req.Header.Set("User-Agent", c.UserAgent)
 
-	var feeds InvoiceFeed
-	var moreInvoices = true
+		if feedOptions.start != -1 {
+			req.Header.Set("X-RESUME-AFTER", fmt.Sprintf("%d", feedOptions.start))
+			feedOptions.start = -1
+		}
 
-	for moreInvoices {
+		var feeds InvoiceFeed
 		if err := c.sendRequest(req, &feeds); err != nil {
 			return err
 		}
-
 		for _, invoice := range feeds.Invoices {
 			callback(&invoice)
 		}
 
-		moreInvoices = len(feeds.Invoices) >= 100
+		if len(feeds.Invoices) == 0 {
+			return nil
+		}
 	}
-	return nil
 }
 
 // InvoiceDetail allows a snapshot of a particular invoice, note that this is rate limited
-func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, sideloads ...string) (*Invoice, error) {
+func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, feedOptions ...FeedOption) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
 	}
 
+	feedOption := parseFeedOptions(feedOptions)
+
 	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber
-	for i, sideload := range sideloads {
+	for i, sideload := range feedOption.includes {
 		if i == 0 {
 			_url = _url + "?include=" + sideload
 		} else {

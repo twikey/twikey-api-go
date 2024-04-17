@@ -32,7 +32,7 @@ func TestInvoiceFeed(t *testing.T) {
 			}
 
 			t.Logf("Invoice update with number %s %.2f euro %s", invoice.Number, invoice.Amount, newState)
-		}, "lastpayment", "meta", "customer")
+		}, FeedInclude("lastpayment", "meta", "customer"))
 		if err != nil {
 			t.Error(err)
 		}

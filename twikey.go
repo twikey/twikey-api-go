@@ -49,6 +49,34 @@ type Client struct {
 
 type ClientOption = func(*Client)
 
+type FeedOptions struct {
+	start    int64
+	includes []string
+}
+
+type FeedOption = func(*FeedOptions)
+
+func parseFeedOptions(options []FeedOption) *FeedOptions {
+	feedOption := &FeedOptions{
+		start: -1,
+	}
+	for _, option := range options {
+		option(feedOption)
+	}
+	return feedOption
+}
+
+func FeedInclude(include ...string) FeedOption {
+	return func(opts *FeedOptions) {
+		opts.includes = append(opts.includes, include...)
+	}
+}
+func FeedStartPosition(start int64) FeedOption {
+	return func(opts *FeedOptions) {
+		opts.start = start
+	}
+}
+
 // WithLogger sets the Logger for the Client. If you don't want
 // the Client to log anything you can pass in the NullLogger
 func WithLogger(logger Logger) ClientOption {

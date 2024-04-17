@@ -40,6 +40,7 @@ type ReservationRequest struct {
 // Transaction is the response from Twikey when updates are received
 type Transaction struct {
 	Id                  int64   `json:"id,omitempty"`
+	Seq                 int64   `json:"seq,omitempty"`
 	DocumentId          int64   `json:"contractId,omitempty"`
 	DocumentReference   string  `json:"mndtId"`
 	Amount              float64 `json:"amount"`
@@ -135,14 +136,15 @@ func (c *Client) ReservationNew(ctx context.Context, reservationRequest *Reserva
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
-func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction *Transaction), sideloads ...string) error {
+func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction *Transaction), options ...FeedOption) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
+	feedOptions := parseFeedOptions(options)
 	_url := c.BaseURL + "/creditor/transaction"
-	for i, sideload := range sideloads {
+	for i, sideload := range feedOptions.includes {
 		if i == 0 {
 			_url = _url + "?include=" + sideload
 		} else {
@@ -155,6 +157,10 @@ func (c *Client) TransactionFeed(ctx context.Context, callback func(transaction 
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
+		if feedOptions.start != -1 {
+			req.Header.Set("X-RESUME-AFTER", fmt.Sprintf("%d", feedOptions.start))
+			feedOptions.start = -1
+		}
 
 		res, err := c.HTTPClient.Do(req)
 		if err != nil {

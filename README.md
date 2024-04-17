@@ -164,11 +164,11 @@ Once signed, a webhook is sent (see below) after which you can fetch the detail 
 think of as reading out a queue. Since it'll return you the changes since the last time you called it.
 
 ```go
-err := c.DocumentFeed(context.Background(), func(mandate *Mndt, eventTime string) {
+err := c.DocumentFeed(context.Background(), func(mandate *Mndt, eventTime string, eventId int64) {
     fmt.println("Document created   ", mandate.MndtId, " @ ", eventTime)
-}, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string) {
+}, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string, eventId int64) {
     fmt.println("Document updated   ", originalMandateNumber, reason.Rsn, " @ ", eventTime)
-}, func(mandateNumber string, reason *CxlRsn, eventTime string) {
+}, func(mandateNumber string, reason *CxlRsn, eventTime string, eventId int64) {
     fmt.println("Document cancelled ", mandateNumber, reason.Rsn, " @ ", eventTime)
 })
 ```

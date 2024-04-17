@@ -44,6 +44,7 @@ func (request *PaylinkRequest) Add(key string, value string) {
 // Paylink is the response receiving from Twikey upon a request
 type Paylink struct {
 	Id     int64   `json:"id,omitempty"`
+	Seq    int64   `json:"seq,omitempty"`
 	Amount float64 `json:"amount,omitempty"`
 	Msg    string  `json:"msg,omitempty"`
 	Ref    string  `json:"ref,omitempty"`
@@ -103,14 +104,15 @@ func (c *Client) PaylinkNew(ctx context.Context, paylinkRequest *PaylinkRequest)
 }
 
 // PaylinkFeed retrieves the feed of updated paylinks since last call
-func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink), sideloads ...string) error {
+func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink), options ...FeedOption) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
+	feedOptions := parseFeedOptions(options)
 	_url := c.BaseURL + "/creditor/payment/link/feed"
-	for i, sideload := range sideloads {
+	for i, sideload := range feedOptions.includes {
 		if i == 0 {
 			_url = _url + "?include=" + sideload
 		} else {
@@ -123,6 +125,10 @@ func (c *Client) PaylinkFeed(ctx context.Context, callback func(paylink *Paylink
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Authorization", c.apiToken)
 		req.Header.Set("User-Agent", c.UserAgent)
+		if feedOptions.start != -1 {
+			req.Header.Set("X-RESUME-AFTER", fmt.Sprintf("%d", feedOptions.start))
+			feedOptions.start = -1
+		}
 
 		res, err := c.HTTPClient.Do(req)
 		if err != nil {

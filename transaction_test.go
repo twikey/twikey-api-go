@@ -78,7 +78,7 @@ func TestTransactions(t *testing.T) {
 				_final = "with no more dunning steps"
 			}
 			t.Log("Transaction update", transaction.Amount, "euro with", ref, _state, _final)
-		}, "meta")
+		}, FeedInclude("meta"))
 		if err != nil {
 			return
 		}

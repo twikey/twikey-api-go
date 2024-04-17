@@ -85,11 +85,11 @@ func TestDocumentFeed(t *testing.T) {
 	}
 
 	t.Run("DocumentFeed", func(t *testing.T) {
-		err := c.DocumentFeed(context.Background(), func(mandate *Mndt, eventTime string) {
+		err := c.DocumentFeed(context.Background(), func(mandate *Mndt, eventTime string, eventId int64) {
 			t.Log("Document created   ", mandate.MndtId, " @ ", eventTime)
-		}, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string) {
+		}, func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string, eventId int64) {
 			t.Log("Document updated   ", originalMandateNumber, reason.Rsn, " @ ", eventTime)
-		}, func(mandateNumber string, reason *CxlRsn, eventTime string) {
+		}, func(mandateNumber string, reason *CxlRsn, eventTime string, eventId int64) {
 			t.Log("Document cancelled ", mandateNumber, reason.Rsn, " @ ", eventTime)
 		})
 		if err != nil {

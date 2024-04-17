@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -205,6 +206,7 @@ type MandateUpdate struct {
 	AmdmntRsn   *AmdmntRsn `json:",omitempty"`
 	CxlRsn      *CxlRsn    `json:",omitempty"`
 	OrgnlMndtId string
+	EvtId       int64
 	EvtTime     string
 }
 
@@ -284,7 +286,7 @@ func (c *Client) DocumentCancel(ctx context.Context, mandate string, reason stri
 
 	c.Debug.Debugf("Cancelled document %s : %s", mandate, reason)
 
-	req, _ := http.NewRequestWithContext(ctx, "DELETE", c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/creditor/mandate?"+params.Encode(), nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", c.apiToken)
 	req.Header.Set("Accept", "application/json")
@@ -315,20 +317,36 @@ func (c *Client) DocumentSuspend(ctx context.Context, mandate string, suspend bo
 // DocumentFeed retrieves all documents since the last call with callbacks since there may be many
 func (c *Client) DocumentFeed(
 	ctx context.Context,
-	newDocument func(mandate *Mndt, eventTime string),
-	updateDocument func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string),
-	cancelledDocument func(mandateNumber string, reason *CxlRsn, eventTime string)) error {
+	newDocument func(mandate *Mndt, eventTime string, eventId int64),
+	updateDocument func(originalMandateNumber string, mandate *Mndt, reason *AmdmntRsn, eventTime string, eventId int64),
+	cancelledDocument func(mandateNumber string, reason *CxlRsn, eventTime string, eventId int64),
+	options ...FeedOption) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
+	feedOptions := parseFeedOptions(options)
+	_url := c.BaseURL + "/creditor/mandate"
+	for i, sideload := range feedOptions.includes {
+		if i == 0 {
+			_url = _url + "?include=" + sideload
+		} else {
+			_url = _url + "&include=" + sideload
+		}
+	}
+
 	for {
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/creditor/mandate", nil)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Authorization", c.apiToken)
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("User-Agent", c.UserAgent)
+
+		if feedOptions.start != -1 {
+			req.Header.Set("X-RESUME-AFTER", fmt.Sprintf("%d", feedOptions.start))
+			feedOptions.start = -1
+		}
 
 		res, err := c.HTTPClient.Do(req)
 		if err != nil {
@@ -346,11 +364,11 @@ func (c *Client) DocumentFeed(
 			c.Debug.Debugf("Fetched %d documents\n", len(updates.Messages))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
-					cancelledDocument(update.OrgnlMndtId, update.CxlRsn, update.EvtTime)
+					cancelledDocument(update.OrgnlMndtId, update.CxlRsn, update.EvtTime, update.EvtId)
 				} else if update.AmdmntRsn != nil {
-					updateDocument(update.OrgnlMndtId, update.Mndt, update.AmdmntRsn, update.EvtTime)
+					updateDocument(update.OrgnlMndtId, update.Mndt, update.AmdmntRsn, update.EvtTime, update.EvtId)
 				} else {
-					newDocument(update.Mndt, update.EvtTime)
+					newDocument(update.Mndt, update.EvtTime, update.EvtId)
 				}
 			}
 
