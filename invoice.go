@@ -24,24 +24,24 @@ const (
 
 // Invoice is the base object for sending and receiving invoices to Twikey
 type Invoice struct {
-	Id     string `json:"id,omitempty"`
-	Number string `json:"number"`
-	// RelatedInvoice in case this is a creditNote
-	RelatedInvoice     string           `json:"relatedInvoiceNumber"`
-	Title              string           `json:"title"`
-	Remittance         string           `json:"remittance"`
-	Ct                 int              `json:"ct,omitempty"`
-	Manual             bool             `json:"manual,omitempty"`
-	State              string           `json:"state,omitempty"`
-	Amount             float64          `json:"amount"`
-	Date               string           `json:"date"`
-	Duedate            string           `json:"duedate"`
-	Ref                string           `json:"ref,omitempty"`
-	CustomerByDocument string           `json:"customerByDocument,omitempty"`
-	Customer           *Customer        `json:"customer,omitempty"`
-	Pdf                []byte           `json:"pdf,omitempty"`
-	Meta               *InvoiceFeedMeta `json:"meta,omitempty"`
-	LastPayment        *Lastpayment     `json:"lastpayment,omitempty"`
+	Id                 string            `json:"id,omitempty"`
+	Number             string            `json:"number"`
+	RelatedInvoice     string            `json:"relatedInvoiceNumber"` // RelatedInvoice in case this is a creditNote
+	Title              string            `json:"title"`
+	Remittance         string            `json:"remittance"`
+	Ct                 int               `json:"ct,omitempty"`
+	Manual             bool              `json:"manual,omitempty"`
+	State              string            `json:"state,omitempty"`
+	Amount             float64           `json:"amount"`
+	Date               string            `json:"date"`
+	Duedate            string            `json:"duedate"`
+	Ref                string            `json:"ref,omitempty"`
+	CustomerByDocument string            `json:"customerByDocument,omitempty"`
+	Customer           *Customer         `json:"customer,omitempty"`
+	Pdf                []byte            `json:"pdf,omitempty"`
+	Meta               *InvoiceFeedMeta  `json:"meta,omitempty"`
+	LastPayment        *Lastpayment      `json:"lastpayment,omitempty"`
+	Extra              map[string]string `json:"extra,omitempty"` // extra attributes
 }
 
 type Lastpayment []map[string]interface{}
@@ -56,8 +56,9 @@ type NewInvoiceRequest struct {
 	ForceTransaction bool // Ignore the state of the contract if passed
 	Template         string
 	Contract         string
-	Invoice          *Invoice // either UBL
-	UblBytes         []byte   // or an invoice item
+	Invoice          *Invoice          // either UBL
+	UblBytes         []byte            // or an invoice item
+	Extra            map[string]string // extra attributes
 }
 
 // Customer is a json wrapper for usage inside the Invoice object
@@ -140,7 +141,16 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 			}
 		}
 
-		invoiceBytes, err := json.Marshal(invoiceRequest)
+		if invoiceRequest.Extra != nil {
+			if invoiceRequest.Invoice.Extra == nil {
+				invoiceRequest.Invoice.Extra = invoiceRequest.Extra
+			} else {
+				// either one or the other
+				return nil, errors.New("invoice extra of request and invoice are exclusive")
+			}
+		}
+
+		invoiceBytes, err := json.Marshal(invoiceRequest.Invoice)
 		if err != nil {
 			return nil, err
 		}
@@ -200,6 +210,10 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		}
 		if invoiceRequest.IdempotencyKey != "" {
 			req.Header.Add("Idempotency-Key", invoiceRequest.IdempotencyKey)
+		}
+		// include extra
+		for key, value := range invoiceRequest.Extra {
+			req.Header.Add(key, value)
 		}
 	} else {
 		return nil, &TwikeyError{

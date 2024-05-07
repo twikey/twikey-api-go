@@ -84,6 +84,9 @@ func TestInvoiceAdd(t *testing.T) {
 				Customer: &Customer{
 					CustomerNumber: "123",
 				},
+				Extra: map[string]string{
+					"attr1": "test",
+				},
 			},
 			Origin: "Go-Test",
 		})

@@ -4,9 +4,9 @@ import "net/http"
 
 type TwikeyError struct {
 	Status  int
-	Code    string
-	Message string
-	Extra   string
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Extra   string `json:"extra"`
 }
 
 func (err *TwikeyError) Error() string {
