@@ -38,6 +38,9 @@ type PaylinkRequest struct {
 }
 
 func (request *PaylinkRequest) Add(key string, value string) {
+	if request.Extra == nil {
+		request.Extra = make(map[string]string)
+	}
 	request.Extra[key] = value
 }
 

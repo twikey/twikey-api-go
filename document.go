@@ -75,6 +75,9 @@ func (request *InviteRequest) asUrlParams() string {
 }
 
 func (request *InviteRequest) Add(key string, value string) {
+	if request.Extra == nil {
+		request.Extra = make(map[string]string)
+	}
 	request.Extra[key] = value
 }
 
@@ -135,6 +138,9 @@ func (request *UpdateRequest) asUrlParams() string {
 }
 
 func (request *UpdateRequest) Add(key string, value string) {
+	if request.Extra == nil {
+		request.Extra = make(map[string]string)
+	}
 	request.Extra[key] = value
 }
 

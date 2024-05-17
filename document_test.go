@@ -40,7 +40,7 @@ func TestDocumentFeed(t *testing.T) {
 		t.Error("No valid invite retrieved")
 	}
 
-	mandateimport, err := c.DocumentSign(context.Background(), &InviteRequest{
+	request := InviteRequest{
 		Template:       getEnv("CT", "1"),
 		CustomerNumber: "123",
 		Amount:         "123.10",
@@ -59,7 +59,9 @@ func TestDocumentFeed(t *testing.T) {
 		MandateNumber:  "",
 		ContractNumber: "",
 		Method:         "import",
-	})
+	}
+	request.Add("MyAttribute", "Anything")
+	mandateimport, err := c.DocumentSign(context.Background(), &request)
 	if err != nil {
 		t.Fatal(err)
 	}
