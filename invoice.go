@@ -61,6 +61,16 @@ type NewInvoiceRequest struct {
 	Extra            map[string]string // extra attributes
 }
 
+type UpdateInvoiceRequest struct {
+	ID      string            `json:"-"`
+	Date    string            `json:"date,omitempty"`
+	DueDate string            `json:"duedate,omitempty"`
+	Title   string            `json:"title,omitempty"`
+	Ref     string            `json:"ref,omitempty"`
+	Pdf     []byte            `json:"pdf,omitempty"`
+	Extra   map[string]string `json:"extra,omitempty"`
+}
+
 // Customer is a json wrapper for usage inside the Invoice object
 type Customer struct {
 	CustomerNumber string `json:"customerNumber,omitempty"`
@@ -397,6 +407,43 @@ func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, m
 	if err != nil {
 		return err
 	}
+	if res.StatusCode == 204 {
+		return nil
+	}
+	return NewTwikeyErrorFromResponse(res)
+}
+
+func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) error {
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return err
+	}
+
+	if request.ID == "" {
+		return errors.New("missing invoice id")
+	}
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	_url := c.BaseURL + "/creditor/invoice/" + request.ID
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, _url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
 	if res.StatusCode == 204 {
 		return nil
 	}
