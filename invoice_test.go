@@ -104,7 +104,7 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			} else {
-				t.Log("Updated invoice", cnote.Id)
+				t.Log("Updated invoice", invoice.Id)
 			}
 		}
 	})
@@ -126,7 +126,7 @@ func TestInvoiceUpdateWithInvalidRequest(t *testing.T) {
 				Remittance: "123123",
 				Amount:     10.00,
 				Customer: &Customer{
-					CustomerNumber: "123123",
+					CustomerNumber: "123",
 					Email:          "support@twikey.com",
 					Address:        "Derbystraat 43",
 					City:           "Gent",
