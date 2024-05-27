@@ -137,6 +137,8 @@ func TestInvoiceUpdateWithInvalidRequest(t *testing.T) {
 				Amount:     10.00,
 				Customer: &Customer{
 					CustomerNumber: "123123",
+					FirstName:      "John",
+					LastName:       "Doe",
 					Email:          "support@twikey.com",
 					Address:        "Derbystraat 43",
 					City:           "Gent",
