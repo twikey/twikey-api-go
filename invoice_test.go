@@ -19,7 +19,7 @@ func TestInvoiceFeed(t *testing.T) {
 			newState := ""
 			if invoice.State == "PAID" {
 				lastPayments := *invoice.LastPayment
-				if lastPayments != nil {
+				if lastPayments != nil && len(lastPayments) > 0 {
 					lastPayment := lastPayments[0]
 					via := ""
 					if lastPayment["method"] != nil {
