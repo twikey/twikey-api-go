@@ -72,7 +72,8 @@ func TestInvoiceAdd(t *testing.T) {
 			t.Log("New invoice", invoice.Id)
 		}
 
-		cnote, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
+		ctx := context.Background()
+		cnote, err := c.InvoiceAdd(ctx, &NewInvoiceRequest{
 			Invoice: &Invoice{
 				Number:         "124",
 				RelatedInvoice: "123",
@@ -91,6 +92,17 @@ func TestInvoiceAdd(t *testing.T) {
 			t.Error(err)
 		} else {
 			t.Log("New CreditNote", cnote.Id)
+		}
+
+		if err := c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
+			ID:    cnote.Id,
+			Title: "Some updated title",
+		}); err != nil {
+			if err != nil {
+				t.Error(err)
+			} else {
+				t.Log("Updated invoice", cnote.Id)
+			}
 		}
 	})
 }

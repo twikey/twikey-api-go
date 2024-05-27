@@ -397,6 +397,10 @@ func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceReques
 		return err
 	}
 
+	if request.ID == "" {
+		return errors.New("missing invoice id")
+	}
+
 	body, err := json.Marshal(request)
 	if err != nil {
 		return err
