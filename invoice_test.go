@@ -45,7 +45,7 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 	}
 
 	c := newTestClient()
-	t.Run("Invoice", func(t *testing.T) {
+	t.Run("InvoiceAddAndUpdate", func(t *testing.T) {
 		invoice, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
 			Invoice: &Invoice{
 				Number:     "123",
@@ -95,7 +95,7 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 		}
 
 		if err := c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
-			ID:    cnote.Id,
+			ID:    invoice.Id,
 			Title: "Some updated title",
 		}); err != nil {
 			if err != nil {
@@ -103,6 +103,48 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 			} else {
 				t.Log("Updated invoice", cnote.Id)
 			}
+		}
+	})
+}
+
+func TestInvoiceUpdateWithInvalidRequest(t *testing.T) {
+	if os.Getenv("TWIKEY_API_KEY") == "" {
+		t.Skip("No TWIKEY_API_KEY available")
+	}
+
+	c := newTestClient()
+	t.Run("InvoiceUpdateWithInvalidRequest", func(t *testing.T) {
+		invoice, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
+			Invoice: &Invoice{
+				Number:     "123123",
+				Title:      "TestInvoice 123123",
+				Date:       "2021-01-01",
+				Duedate:    "2021-03-01",
+				Remittance: "123123",
+				Amount:     10.00,
+				Customer: &Customer{
+					CustomerNumber: "123123",
+					Email:          "support@twikey.com",
+					Address:        "Derbystraat 43",
+					City:           "Gent",
+					Zip:            "9051",
+					Country:        "BE",
+					Language:       "nl",
+				},
+			},
+			Origin: "Go-Test",
+		})
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("New invoice", invoice.Id)
+		}
+
+		ctx := context.Background()
+		if err := c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
+			Title: "Some updated title",
+		}); err == nil {
+			t.Error("Update invoice call did not return an error even though we send no ID")
 		}
 	})
 }
