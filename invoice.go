@@ -59,14 +59,6 @@ type NewInvoiceRequest struct {
 	UblBytes         []byte   // or an invoice item
 }
 
-type Status = string
-
-const (
-	STATUS_PAID     Status = "paid"
-	STATUS_BOOKED   Status = "booked"
-	STATUS_ARCHIVED Status = "archived"
-)
-
 type UpdateInvoiceRequest struct {
 	ID      string            `json:"-"`
 	Date    string            `json:"date,omitempty"`
@@ -75,7 +67,6 @@ type UpdateInvoiceRequest struct {
 	Ref     string            `json:"ref,omitempty"`
 	Pdf     []byte            `json:"pdf,omitempty"`
 	Extra   map[string]string `json:"extra,omitempty"`
-	Status  Status            `json:"status,omitempty"`
 }
 
 // Customer is a json wrapper for usage inside the Invoice object
