@@ -6,7 +6,12 @@ import (
 	"testing"
 )
 
+var c *Client
+
 func newTestClient() *Client {
+	if c != nil {
+		return c
+	}
 	c := NewClient(os.Getenv("TWIKEY_API_KEY"))
 	c.BaseURL = getEnv("TWIKEY_URL", "https://api.beta.twikey.com")
 	return c

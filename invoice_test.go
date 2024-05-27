@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestInvoiceFeed(t *testing.T) {
@@ -17,16 +18,19 @@ func TestInvoiceFeed(t *testing.T) {
 		err := c.InvoiceFeed(context.Background(), func(invoice *Invoice) {
 			newState := ""
 			if invoice.State == "PAID" {
-				lastPayment := (*invoice.LastPayment)[0]
-				via := ""
-				if lastPayment["method"] != nil {
-					via = fmt.Sprintf(" via %s", lastPayment["method"])
+				lastPayments := *invoice.LastPayment
+				if lastPayments != nil {
+					lastPayment := lastPayments[0]
+					via := ""
+					if lastPayment["method"] != nil {
+						via = fmt.Sprintf(" via %s", lastPayment["method"])
+					}
+					date := ""
+					if lastPayment["date"] != nil {
+						via = fmt.Sprintf(" on %s", lastPayment["date"])
+					}
+					newState = "PAID" + via + date
 				}
-				date := ""
-				if lastPayment["date"] != nil {
-					via = fmt.Sprintf(" on %s", lastPayment["date"])
-				}
-				newState = "PAID" + via + date
 			} else {
 				newState = "now has state " + invoice.State
 			}
@@ -46,16 +50,21 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 
 	c := newTestClient()
 	t.Run("InvoiceAddAndUpdate", func(t *testing.T) {
+		now := time.Now()
+		invoiceNumber := now.Format("2006-01-02-15-04")
+
 		invoice, err := c.InvoiceAdd(context.Background(), &NewInvoiceRequest{
 			Invoice: &Invoice{
-				Number:     "123",
+				Number:     invoiceNumber,
 				Title:      "TestInvoice 123",
 				Date:       "2021-01-01",
 				Duedate:    "2021-03-01",
 				Remittance: "123",
 				Amount:     10.00,
 				Customer: &Customer{
-					CustomerNumber: "123",
+					CustomerNumber: invoiceNumber,
+					FirstName:      "John",
+					LastName:       "Doe",
 					Email:          "support@twikey.com",
 					Address:        "Derbystraat 43",
 					City:           "Gent",
@@ -75,15 +84,16 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 		ctx := context.Background()
 		cnote, err := c.InvoiceAdd(ctx, &NewInvoiceRequest{
 			Invoice: &Invoice{
-				Number:         "124",
-				RelatedInvoice: "123",
+				Number:         invoiceNumber + "-CN",
+				RelatedInvoice: invoiceNumber,
+				Manual:         true,
 				Title:          "TestCreditNote 123",
 				Date:           "2021-01-02",
 				Duedate:        "2021-03-01",
 				Remittance:     "123",
 				Amount:         -1.00,
 				Customer: &Customer{
-					CustomerNumber: "123",
+					CustomerNumber: invoiceNumber,
 				},
 				Extra: map[string]string{
 					"attr1": "test",
@@ -97,7 +107,7 @@ func TestInvoiceAddAndUpdate(t *testing.T) {
 			t.Log("New CreditNote", cnote.Id)
 		}
 
-		if err := c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
+		if invoice, err = c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
 			ID:    invoice.Id,
 			Title: "Some updated title",
 		}); err != nil {
@@ -144,7 +154,7 @@ func TestInvoiceUpdateWithInvalidRequest(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		if err := c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
+		if invoice, err = c.InvoiceUpdate(ctx, &UpdateInvoiceRequest{
 			Title: "Some updated title",
 		}); err == nil {
 			t.Error("Update invoice call did not return an error even though we send no ID")

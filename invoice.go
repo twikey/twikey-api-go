@@ -413,24 +413,24 @@ func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, m
 	return NewTwikeyErrorFromResponse(res)
 }
 
-func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) error {
+func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) (*Invoice, error) {
 	if err := c.refreshTokenIfRequired(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if request.ID == "" {
-		return errors.New("missing invoice id")
+		return nil, errors.New("missing invoice id")
 	}
 
 	body, err := json.Marshal(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_url := c.BaseURL + "/creditor/invoice/" + request.ID
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, _url, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Add("Accept-Language", "en")
@@ -440,12 +440,20 @@ func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceReques
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == 204 {
-		return nil
+	if res.StatusCode == 200 {
+		payload, _ := io.ReadAll(res.Body)
+
+		var invoice Invoice
+		err := json.Unmarshal(payload, &invoice)
+		if err != nil {
+			return nil, err
+		}
+
+		return &invoice, nil
 	}
-	return NewTwikeyErrorFromResponse(res)
+	return nil, NewTwikeyErrorFromResponse(res)
 }
