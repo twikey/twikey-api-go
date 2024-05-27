@@ -39,7 +39,7 @@ func TestInvoiceFeed(t *testing.T) {
 	})
 }
 
-func TestInvoiceAdd(t *testing.T) {
+func TestInvoiceAddAndUpdate(t *testing.T) {
 	if os.Getenv("TWIKEY_API_KEY") == "" {
 		t.Skip("No TWIKEY_API_KEY available")
 	}
