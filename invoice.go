@@ -402,14 +402,9 @@ func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, m
 }
 
 func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) error {
-	if err := c.refreshTokenIfRequired(ctx); err != nil {
+	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
-
-	// TODO: Validate request
-	// -> ID == UUID?
-	// -> Date's correctly formatted?
-	// -> State of known value?
 
 	body, err := json.Marshal(request)
 	if err != nil {
