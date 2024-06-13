@@ -31,6 +31,7 @@ type Invoice struct {
 	Remittance         string            `json:"remittance"`
 	Ct                 int               `json:"ct,omitempty"`
 	Manual             bool              `json:"manual,omitempty"`
+	Locale             string            `json:"locale,omitempty"`
 	State              string            `json:"state,omitempty"`
 	Amount             float64           `json:"amount"`
 	Date               string            `json:"date"`
