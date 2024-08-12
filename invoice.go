@@ -20,6 +20,7 @@ const (
 	InvoiceAction_REMINDER                      // Send a reminder by email
 	InvoiceAction_LETTER                        // Send the invoice via postal letter
 	InvoiceAction_REOFFER                       // Reoffer (or try to collect the invoice via a recurring mechanism)
+	InvoiceAction_PEPPOL                        // Send the invoice via the Peppol network
 )
 
 // Invoice is the base object for sending and receiving invoices to Twikey
@@ -31,6 +32,7 @@ type Invoice struct {
 	Remittance         string            `json:"remittance"`
 	Ct                 int               `json:"ct,omitempty"`
 	Manual             bool              `json:"manual,omitempty"`
+	Locale             string            `json:"locale,omitempty"`
 	State              string            `json:"state,omitempty"`
 	Amount             float64           `json:"amount"`
 	Date               string            `json:"date"`
@@ -362,6 +364,8 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 		params.Add("type", "reminder")
 	case InvoiceAction_REOFFER:
 		params.Add("type", "reoffer")
+	case InvoiceAction_PEPPOL:
+		params.Add("type", "peppol")
 	default:
 		return errors.New("invalid action")
 	}
@@ -413,24 +417,24 @@ func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, m
 	return NewTwikeyErrorFromResponse(res)
 }
 
-func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) error {
+func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceRequest) (*Invoice, error) {
 	if err := c.refreshTokenIfRequired(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if request.ID == "" {
-		return errors.New("missing invoice id")
+		return nil, errors.New("missing invoice id")
 	}
 
 	body, err := json.Marshal(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_url := c.BaseURL + "/creditor/invoice/" + request.ID
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, _url, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Add("Accept-Language", "en")
@@ -440,13 +444,20 @@ func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceReques
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != 200 {
-		return NewTwikeyErrorFromResponse(res)
-	}
+	if res.StatusCode == 200 {
+		payload, _ := io.ReadAll(res.Body)
 
-	return nil
+		var invoice Invoice
+		err := json.Unmarshal(payload, &invoice)
+		if err != nil {
+			return nil, err
+		}
+
+		return &invoice, nil
+	}
+	return nil, NewTwikeyErrorFromResponse(res)
 }
