@@ -20,6 +20,7 @@ const (
 	InvoiceAction_REMINDER                      // Send a reminder by email
 	InvoiceAction_LETTER                        // Send the invoice via postal letter
 	InvoiceAction_REOFFER                       // Reoffer (or try to collect the invoice via a recurring mechanism)
+	InvoiceAction_PEPPOL                        // Send the invoice via the Peppol network
 )
 
 // Invoice is the base object for sending and receiving invoices to Twikey
@@ -363,6 +364,8 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 		params.Add("type", "reminder")
 	case InvoiceAction_REOFFER:
 		params.Add("type", "reoffer")
+	case InvoiceAction_PEPPOL:
+		params.Add("type", "peppol")
 	default:
 		return errors.New("invalid action")
 	}
