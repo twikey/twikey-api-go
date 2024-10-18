@@ -28,11 +28,11 @@ func NewTwikeyError(code string, msg string, extra string) *TwikeyError {
 
 func NewTwikeyErrorFromResponse(res *http.Response) *TwikeyError {
 	if res.StatusCode == 400 {
-		errcode := res.Header["Apierror"][0]
+		code := res.Header.Get("ApiError")
 		return &TwikeyError{
 			Status:  res.StatusCode,
-			Code:    errcode,
-			Message: errcode,
+			Code:    code,
+			Message: code,
 		}
 	}
 	return &TwikeyError{
