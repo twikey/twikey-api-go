@@ -41,6 +41,7 @@ type Invoice struct {
 	CustomerByDocument string            `json:"customerByDocument,omitempty"`
 	Customer           *Customer         `json:"customer,omitempty"`
 	Pdf                []byte            `json:"pdf,omitempty"`
+	Delivery           string            `json:"delivery,omitempty"` // email/print/peppol/disabled
 	Meta               *InvoiceFeedMeta  `json:"meta,omitempty"`
 	LastPayment        *Lastpayment      `json:"lastpayment,omitempty"`
 	Extra              map[string]string `json:"extra,omitempty"` // extra attributes
@@ -57,6 +58,7 @@ type NewInvoiceRequest struct {
 	Manual           bool // Don't automatically collect
 	ForceTransaction bool // Ignore the state of the contract if passed
 	Template         string
+	Delivery         string // email/print/peppol/disabled
 	Contract         string
 	Invoice          *Invoice          // either UBL
 	UblBytes         []byte            // or an invoice item
@@ -85,6 +87,7 @@ type Customer struct {
 	City           string `json:"city"`
 	Zip            string `json:"zip"`
 	Country        string `json:"country"`
+	Peppol         string `json:"peppol"`
 	Language       string `json:"l"`
 	Mobile         string `json:"mobile,omitempty"`
 }
@@ -153,6 +156,10 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 			}
 		}
 
+		if invoiceRequest.Delivery != "" {
+			invoiceRequest.Invoice.Delivery = invoiceRequest.Delivery
+		}
+
 		if invoiceRequest.Extra != nil {
 			if invoiceRequest.Invoice.Extra == nil {
 				invoiceRequest.Invoice.Extra = invoiceRequest.Extra
@@ -210,6 +217,9 @@ func (c *Client) InvoiceAdd(ctx context.Context, invoiceRequest *NewInvoiceReque
 		}
 		if invoiceRequest.Purpose != "" {
 			req.Header.Set("X-Purpose", invoiceRequest.Purpose)
+		}
+		if invoiceRequest.Delivery != "" {
+			req.Header.Set("X-Delivery", invoiceRequest.Delivery)
 		}
 		if invoiceRequest.Manual {
 			req.Header.Set("X-Manual", "true")
