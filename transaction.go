@@ -3,6 +3,7 @@ package twikey
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +36,15 @@ type ReservationRequest struct {
 	Minimum           float64
 	Expiration        *time.Time
 	Force             bool
+}
+
+type TransactionDeleteRequest struct {
+	// ID of the transaction to delete
+	ID string
+	// Ref of the transaction to delete
+	Ref string
+	// Reservation UUID of the reservation to delete
+	Reservation string
 }
 
 // Transaction is the response from Twikey when updates are received
@@ -133,6 +143,32 @@ func (c *Client) ReservationNew(ctx context.Context, reservationRequest *Reserva
 	reservation := &Reservation{}
 	err := c.sendRequest(req, reservation)
 	return reservation, err
+}
+
+func (c *Client) DeleteTransaction(ctx context.Context, request *TransactionDeleteRequest) error {
+	if request.ID == "" && request.Ref == "" && request.Reservation == "" {
+		return errors.New("invalid request at least ID, Ref or Reservation has to be set in the TransactionDeleteRequest")
+	}
+
+	params := url.Values{}
+	if request.ID != "" {
+		params.Add("id", request.ID)
+	}
+
+	if request.Ref != "" {
+		params.Add("ref", request.Ref)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf(c.BaseURL+"/creditor/transaction?%s", params.Encode()), nil)
+	if err != nil {
+		return err
+	}
+
+	if request.Reservation != "" {
+		req.Header.Add("X-RESERVATION", request.Reservation)
+	}
+
+	return c.sendRequest(req, nil)
 }
 
 // TransactionFeed retrieves all transaction updates since the last call with a callback since there may be many
