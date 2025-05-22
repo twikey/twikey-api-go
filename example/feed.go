@@ -19,9 +19,9 @@ func main() {
 		twikey.WithBaseURL(apiurl))
 
 	now := time.Now()
-	filename_as_date := now.Format("2006-01-02T15:04:05Z")
+	filenameAsDate := now.Format("2006-01-02T15:04:05Z")
 
-	file, err := os.OpenFile(fmt.Sprintf("%s.csv", filename_as_date), os.O_CREATE|os.O_RDWR, 0666)
+	file, err := os.OpenFile(fmt.Sprintf("%s.csv", filenameAsDate), os.O_CREATE|os.O_RDWR, 0666)
 
 	ctx := context.Background()
 	err = client.DocumentFeed(ctx,
@@ -69,9 +69,11 @@ func main() {
 		panic(err)
 	}
 
-	file.Close()
+	_ = file.Close()
 	info, err := os.Lstat(file.Name())
-	if info.Size() == 0 {
-		os.Remove(file.Name())
+	if info != nil {
+		if info.Size() == 0 {
+			_ = os.Remove(file.Name())
+		}
 	}
 }

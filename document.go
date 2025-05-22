@@ -366,7 +366,7 @@ func (c *Client) DocumentFeed(
 				return err
 			}
 
-			res.Body.Close()
+			_ = res.Body.Close()
 			c.Debug.Debugf("Fetched %d documents\n", len(updates.Messages))
 			for _, update := range updates.Messages {
 				if update.CxlRsn != nil {
