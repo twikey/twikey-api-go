@@ -43,6 +43,46 @@ func TestInvoiceFeed(t *testing.T) {
 	})
 }
 
+func TestPaymentFeed(t *testing.T) {
+	if os.Getenv("TWIKEY_API_KEY") == "" {
+		t.Skip("No TWIKEY_API_KEY available")
+	}
+
+	c := newTestClient()
+	t.Run("PaymentFeed", func(t *testing.T) {
+		err := c.PaymentFeed(context.Background(), func(p *Payment) {
+			if p.EventID == "" {
+				t.Errorf("missing eventId")
+			}
+
+			if p.Amount < 0 {
+				t.Errorf("invalid amount: %f", p.Amount)
+			}
+
+			if p.Currency != "EUR" {
+				t.Errorf("unexpected currency: %s", p.Currency)
+			}
+
+			if p.Origin.Object != "invoice" {
+				t.Errorf("unexpected origin object: %s", p.Origin.Object)
+			}
+
+			if p.EventType == "payment_failure" && p.Error == nil {
+				t.Errorf("payment_failure without error object")
+			}
+
+			if p.EventType != "payment_failure" && p.Error != nil {
+				t.Errorf("non-failure event has error: %s", p.EventType)
+			}
+
+			t.Logf("Payment update for invoice number %s %.2f euro : %s - %v", p.Origin.Number, p.Amount, p.EventType, p.Details)
+		})
+		if err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestInvoiceAddAndUpdate(t *testing.T) {
 	if os.Getenv("TWIKEY_API_KEY") == "" {
 		t.Skip("No TWIKEY_API_KEY available")

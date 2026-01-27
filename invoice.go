@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -310,8 +312,42 @@ func (c *Client) InvoiceFeed(ctx context.Context, callback func(invoice *Invoice
 	}
 }
 
+// PaymentFeed Get invoice payment Feed twikey
+func (c *Client) PaymentFeed(ctx context.Context, callback func(payment *Payment), options ...FeedOption) error {
+
+	if err := c.refreshTokenIfRequired(); err != nil {
+		return err
+	}
+
+	feedOptions := parseFeedOptions(options)
+	_url := c.BaseURL + "/creditor/invoice/payment/feed"
+	for {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Authorization", c.apiToken)
+		req.Header.Set("User-Agent", c.UserAgent)
+
+		if feedOptions.start != -1 {
+			req.Header.Set("X-RESUME-AFTER", fmt.Sprintf("%d", feedOptions.start))
+			feedOptions.start = -1
+		}
+
+		var feed PaymentFeed
+		if err := c.sendRequest(req, &feed); err != nil {
+			return err
+		}
+		for _, payment := range feed.Payments {
+			callback(&payment)
+		}
+
+		if len(feed.Payments) == 0 {
+			return nil
+		}
+	}
+}
+
 // InvoiceDetail allows a snapshot of a particular invoice, note that this is rate limited
-func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, feedOptions ...FeedOption) (*Invoice, error) {
+func (c *Client) InvoiceDetail(ctx context.Context, invoiceId string, feedOptions ...FeedOption) (*Invoice, error) {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return nil, err
@@ -319,7 +355,7 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, fe
 
 	feedOption := parseFeedOptions(feedOptions)
 
-	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber
+	_url := c.BaseURL + "/creditor/invoice/" + invoiceId
 	for i, sideload := range feedOption.includes {
 		if i == 0 {
 			_url = _url + "?include=" + sideload
@@ -354,33 +390,31 @@ func (c *Client) InvoiceDetail(ctx context.Context, invoiceIdOrNumber string, fe
 }
 
 // InvoiceAction allows certain actions to be done on an existing invoice
-func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, action InvoiceAction) error {
+func (c *Client) InvoiceAction(ctx context.Context, invoiceId string, action InvoiceAction) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
-	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber + "/action"
-	params := url.Values{}
-
+	_url := ""
 	switch action {
 	case InvoiceAction_EMAIL:
-		params.Add("type", "email")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/" + "email"
 	case InvoiceAction_SMS:
-		params.Add("type", "sms")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/sms"
 	case InvoiceAction_LETTER:
-		params.Add("type", "letter")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/letter"
 	case InvoiceAction_REMINDER:
-		params.Add("type", "reminder")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/reminder"
 	case InvoiceAction_REOFFER:
-		params.Add("type", "reoffer")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/reoffer"
 	case InvoiceAction_PEPPOL:
-		params.Add("type", "peppol")
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/peppol"
 	default:
 		return errors.New("invalid action")
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, _url, strings.NewReader(params.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, _url, nil)
 	req.WithContext(ctx)
 	req.Header.Add("Accept-Language", "en")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -398,15 +432,14 @@ func (c *Client) InvoiceAction(ctx context.Context, invoiceIdOrNumber string, ac
 }
 
 // InvoicePayment allows marking an existing invoice as paid
-func (c *Client) InvoicePayment(ctx context.Context, invoiceIdOrNumber string, method string, paymentdate string) error {
+func (c *Client) InvoicePayment(ctx context.Context, invoiceId string, method string, paymentdate string) error {
 
 	if err := c.refreshTokenIfRequired(); err != nil {
 		return err
 	}
 
-	_url := c.BaseURL + "/creditor/invoice/" + invoiceIdOrNumber + "/action"
+	_url := c.BaseURL + "/creditor/invoice/" + invoiceId + "/manualPayment"
 	params := url.Values{}
-	params.Add("type", "manualPayment")
 	params.Add("rsn", method)
 	params.Add("date", paymentdate)
 
@@ -470,4 +503,42 @@ func (c *Client) InvoiceUpdate(ctx context.Context, request *UpdateInvoiceReques
 		return &invoice, nil
 	}
 	return nil, NewTwikeyErrorFromResponse(res)
+}
+
+// DownloadInvoice allows the download of a specific (signed) pdf
+func (c *Client) DownloadInvoice(ctx context.Context, invoiceId string, ubl bool, downloadFile string) error {
+
+	var _url string
+	if ubl {
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/ubl"
+	} else {
+		_url = c.BaseURL + "/creditor/invoice/" + invoiceId + "/pdf"
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, _url, nil)
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Add("Authorization", c.apiToken)
+
+	absPath, _ := filepath.Abs(downloadFile)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == 200 {
+		payload, _ := io.ReadAll(res.Body)
+
+		f, _ := os.Create(downloadFile)
+		defer f.Close()
+		_, err := f.Write(payload)
+		if err != nil {
+			c.Debug.Debugf("Unable to download file %s : %v", absPath, err)
+		} else {
+			c.Debug.Debugf("Saving to file %s", absPath)
+		}
+		return err
+	}
+	c.Debug.Debugf("Unable to download file %s", absPath)
+	return NewTwikeyErrorFromResponse(res)
 }
