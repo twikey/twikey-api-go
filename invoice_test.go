@@ -17,7 +17,7 @@ func TestInvoiceFeed(t *testing.T) {
 	t.Run("InvoiceFeed", func(t *testing.T) {
 		err := c.InvoiceFeed(context.Background(), func(invoice *Invoice) {
 			newState := ""
-			if invoice.State == "PAID" {
+			if invoice.State == "PAID" && invoice.LastPayment != nil {
 				lastPayments := *invoice.LastPayment
 				if lastPayments != nil && len(lastPayments) > 0 {
 					lastPayment := lastPayments[0]
