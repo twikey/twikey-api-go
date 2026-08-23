@@ -1,6 +1,12 @@
 package twikey
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
 
 type PaymentFeed struct {
 	Payments []Payment `json:"Payments"`
@@ -16,6 +22,32 @@ type Payment struct {
 	Gateway    Gateway        `json:"gateway"`
 	Details    PaymentDetails `json:"details"`
 	Error      *PaymentError  `json:"error,omitempty"`
+}
+
+// UnmarshalJSON accepts the amount as either a json number or a quoted string,
+// as the api returns both depending on the origin of the payment.
+func (p *Payment) UnmarshalJSON(data []byte) error {
+	type alias Payment
+	aux := struct {
+		Amount json.RawMessage `json:"amount"`
+		*alias
+	}{alias: (*alias)(p)}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	raw := strings.TrimSpace(string(aux.Amount))
+	if raw == "" || raw == "null" {
+		return nil
+	}
+
+	amount, err := strconv.ParseFloat(strings.Trim(raw, `"`), 64)
+	if err != nil {
+		return fmt.Errorf("invalid amount %s: %w", raw, err)
+	}
+	p.Amount = amount
+	return nil
 }
 
 type Origin struct {
